@@ -4,4 +4,3 @@ DerivedData/
 .build/
 .swiftpm/
 *.xcodeproj/
-!*.xcodeproj/project.pbxproj

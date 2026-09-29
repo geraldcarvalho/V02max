@@ -1,0 +1,110 @@
+name: HIDIT
+options:
+  bundleIdPrefix: com.geraldcarvalho
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Set your Apple developer team here or in Xcode's Signing & Capabilities tab.
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+packages:
+  HIDITCore:
+    path: Packages/HIDITCore
+
+targets:
+  HIDIT:
+    type: application
+    platform: iOS
+    sources:
+      - path: HIDIT
+      - path: Shared
+    dependencies:
+      - package: HIDITCore
+      - target: HIDITWidgets
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.geraldcarvalho.hidit
+        PRODUCT_NAME: HIDIT
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: HIDIT/Info.plist
+      properties:
+        CFBundleDisplayName: HIDIT
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        ITSAppUsesNonExemptEncryption: false
+        UIBackgroundModes: [audio]
+        NSSupportsLiveActivities: true
+        UIRequiresFullScreen: true
+        UIUserInterfaceStyle: Light
+        UIStatusBarStyle: UIStatusBarStyleDarkContent
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UILaunchScreen:
+          UIColorName: Ground
+        UIAppFonts:
+          - Michroma-Regular.ttf
+          - HankenGrotesk-Light.ttf
+          - HankenGrotesk-Regular.ttf
+          - HankenGrotesk-Medium.ttf
+          - HankenGrotesk-SemiBold.ttf
+
+  HIDITWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: HIDITWidgets
+      - path: Shared
+      - path: HIDIT/DesignSystem
+      - path: HIDIT/Resources/Fonts
+        buildPhase: resources
+    dependencies:
+      - package: HIDITCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.geraldcarvalho.hidit.widgets
+        PRODUCT_NAME: HIDITWidgets
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+        GENERATE_INFOPLIST_FILE: NO
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) WIDGET_EXTENSION
+    info:
+      path: HIDITWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: HIDIT
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UIAppFonts:
+          - Michroma-Regular.ttf
+          - HankenGrotesk-Regular.ttf
+          - HankenGrotesk-Medium.ttf
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+schemes:
+  HIDIT:
+    build:
+      targets:
+        HIDIT: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - package: HIDITCore/HIDITCoreTests
+    archive:
+      config: Release
