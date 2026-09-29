@@ -294,15 +294,12 @@ struct LadderPreview: View {
     }
 }
 
-/// Concentric hairline circles and the signal-to-ember gradient, behind calm screens.
+/// The signal-to-ember gradient, behind calm screens.
 struct CalmBackground: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .topLeading) {
                 Tokens.Colors.ground
-                ring(x: -210, y: -120, d: 380)
-                ring(x: -150, y: 90, d: 400)
-                ring(x: -60, y: 420, d: 560)
                 Circle()
                     .fill(RadialGradient(
                         stops: [
@@ -319,15 +316,9 @@ struct CalmBackground: View {
         .ignoresSafeArea()
         .accessibilityHidden(true)
     }
-
-    private func ring(x: CGFloat, y: CGFloat, d: CGFloat) -> some View {
-        Circle().strokeBorder(Tokens.Colors.hairline, lineWidth: 1)
-            .frame(width: d, height: d)
-            .offset(x: x, y: y)
-    }
 }
 
-/// Thin progress ring with an end dot, starting at 12 o'clock. Work fills clockwise; recover drains back.
+/// One thin progress ring, starting at 12 o'clock. Work fills clockwise; recover drains back.
 struct ProgressRing: View {
     let progress: Double
     let color: Color
@@ -337,20 +328,15 @@ struct ProgressRing: View {
             let d = min(geo.size.width, geo.size.height)
             let r = d / 2 - 6
             let p = min(1, max(0, progress))
-            let angle = p * 2 * .pi
             ZStack {
                 Circle()
-                    .stroke(Tokens.Colors.dash, style: StrokeStyle(lineWidth: 1, dash: [2, 4]))
+                    .stroke(Tokens.Colors.hairline, lineWidth: 1)
                     .frame(width: r * 2, height: r * 2)
                 Circle()
                     .trim(from: 0, to: p)
                     .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .frame(width: r * 2, height: r * 2)
-                Circle()
-                    .fill(color)
-                    .frame(width: 12, height: 12)
-                    .offset(x: r * sin(angle), y: -r * cos(angle))
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
