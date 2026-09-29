@@ -1,0 +1,518 @@
+<title>HIDIT interval timer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600&family=Michroma&display=swap">
+<meta name="theme-color" content="#DBDAD8">
+<style>
+/* Axis Gray: flat warm gray ground, light type, mono labels, hairline circles, one signal gradient. Single light look by choice. */
+:root {
+  --ground: #DBDAD8; --surface: #E7E6E3; --ink: #1A1A19; --muted: #5E5B58;
+  --hairline: rgba(26,26,25,0.16); --dash: rgba(26,26,25,0.3); --taupe: #8E8584;
+  --work: #B93A26; --recover: #4A4746; --signal: #C4432B; --ember: #D98A3B;
+  --sans: "Hanken Grotesk", -apple-system, system-ui, sans-serif;
+  --display: "Michroma", "Arial Black", system-ui, sans-serif;
+  --mono: "Hanken Grotesk", -apple-system, system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans); -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+#app { position: relative; max-width: 430px; min-height: 100%; margin: 0 auto; overflow: hidden; isolation: isolate; }
+.deco { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .25s; }
+body[data-calm="1"] .deco { opacity: 1; }
+.ring { position: absolute; border-radius: 50%; border: 1px solid var(--hairline); }
+.blob { position: absolute; left: -170px; bottom: -120px; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle at 45% 45%, var(--signal) 0%, var(--ember) 58%, rgba(219,218,216,0) 74%); filter: blur(10px); }
+section { min-height: 100dvh; display: flex; flex-direction: column; padding: 56px 20px 32px; }
+section[hidden] { display: none; }
+.label { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 24px; text-transform: uppercase; letter-spacing: .01em; line-height: 1.25; }
+.spacer { flex: 1; }
+.primary { height: 72px; width: 100%; border: 0; border-radius: 36px; background: var(--ink); color: #fff; font-size: 20px; font-weight: 600; transition: transform .1s; }
+.primary:active, .secondary:active { transform: scale(.98); }
+.secondary { height: 72px; width: 100%; border: 1px solid var(--dash); border-radius: 36px; background: transparent; font-size: 20px; font-weight: 600; }
+.quiet { height: 56px; width: 100%; border: 0; background: transparent; color: var(--muted); font-size: 17px; font-weight: 500; }
+.iconbtn { width: 48px; height: 48px; flex: none; border: 0; border-radius: 16px; background: var(--taupe); color: #fff; display: grid; place-items: center; padding: 0; }
+.iconbtn svg { width: 22px; height: 22px; }
+svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+/* home */
+.head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.head p { margin: 0; max-width: 220px; font-size: 17px; font-weight: 300; line-height: 1.35; }
+.head b { font-weight: 600; }
+.day { text-align: right; } .day strong { display: block; font-size: 22px; font-weight: 600; }
+.list { margin-top: 24px; }
+.row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 72px; padding: 12px 0; border: 0; border-top: 1px dashed var(--dash); background: transparent; text-align: left; }
+.row:first-child { border-top: 0; }
+.glyph { width: 28px; height: 28px; flex: none; display: flex; align-items: flex-end; justify-content: center; gap: 3px; }
+.glyph i { width: 4px; border-radius: 2px; background: var(--work); }
+.row .txt { flex: 1; } .row .name { display: block; font-size: 17px; font-weight: 500; }
+.row .sub { display: block; margin-top: 2px; font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.row .check { width: 22px; height: 22px; visibility: hidden; }
+.row[aria-checked="true"] .check { visibility: visible; }
+.edit { width: 48px; height: 48px; flex: none; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; }
+.edit svg { width: 18px; height: 18px; }
+.summary { margin: 12px 0 0; }
+/* builder */
+.top { display: flex; align-items: center; margin-bottom: 8px; }
+.card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 20px; overflow: hidden; margin-top: 16px; }
+.line { display: flex; align-items: center; gap: 8px; min-height: 64px; padding: 8px 16px; border-top: 1px solid var(--hairline); }
+.line:first-child { border-top: 0; }
+.line .k { flex: 1; font-size: 17px; font-weight: 500; }
+.line .k small { display: block; margin-top: 2px; font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); font-weight: 400; }
+.step { width: 44px; height: 44px; border: 1px solid var(--hairline); border-radius: 16px; background: transparent; color: var(--muted); font-size: 22px; padding: 0; }
+.val { min-width: 72px; text-align: center; font-weight: 400; font-variant-numeric: tabular-nums; }
+.val.ro { color: var(--recover); }
+.seg { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--hairline); border-radius: 14px; }
+.seg button { flex: 1; min-height: 40px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); font-size: 15px; }
+.seg button[aria-pressed="true"] { background: var(--hairline); color: var(--ink); font-weight: 600; }
+.segline { padding: 4px 16px 12px; border-top: 0; }
+.preview { padding: 14px 16px 12px; }
+.preview .bars { display: flex; justify-content: space-between; align-items: flex-end; height: 84px; margin-top: 12px; }
+.preview .pair { display: flex; align-items: flex-end; gap: 3px; height: 100%; padding-left: 6px; border-left: 1px dashed var(--dash); }
+.preview .pair i { width: 12px; border-radius: 3px; }
+.w { background: var(--work); } .r { background: var(--recover); }
+.preview .nums { display: flex; justify-content: space-between; margin-top: 6px; }
+.preview .nums span { flex: 1; text-align: center; }
+.legend { display: flex; gap: 16px; margin-top: 10px; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.legend .lw::before { background: var(--work); } .legend .lr::before { background: var(--recover); }
+.warn { color: var(--signal); }
+/* ready + run + finish */
+.center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.phase { font-family: var(--display); font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: .04em; }
+.timer { font-family: var(--display); font-size: clamp(72px, 22vw, 92px); font-weight: 400; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.timer.long { font-size: clamp(54px, 16vw, 68px); }
+.timer.hot { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.04); } }
+#run { transition: background-color .25s; }
+#run[data-phase="work"] { background: color-mix(in srgb, var(--work) 12%, var(--ground)); --pc: var(--work); }
+#run[data-phase="recover"] { background: color-mix(in srgb, var(--recover) 12%, var(--ground)); --pc: var(--recover); }
+#run[data-paused="1"] { background: var(--ground); }
+#run .phase, #run .timer { color: var(--pc); }
+#run[data-paused="1"] .phase { color: var(--muted); }
+#run[data-paused="1"] .timer { opacity: .4; }
+.track { position: relative; height: 12px; display: flex; align-items: center; }
+.track .base { width: 100%; height: 1px; background: var(--dash); }
+.track .fill { position: absolute; left: 0; height: 2px; background: var(--pc); }
+.track .dot { position: absolute; width: 12px; height: 12px; margin-left: -6px; border-radius: 6px; background: var(--pc); }
+.nextrow { display: flex; justify-content: space-between; margin-top: 10px; }
+.nextrow b { font-family: var(--sans); font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--ink); font-weight: 600; }
+.actions { margin-top: 32px; display: grid; gap: 12px; }
+.big { font-size: 96px; }
+.stats { margin-top: 48px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px 16px; }
+.stats div { font-size: 17px; font-weight: 300; } .stats .label { display: block; margin-top: 4px; }
+/* first + settings */
+.note { display: flex; gap: 12px; align-items: flex-start; margin-top: 40px; padding: 16px; background: var(--surface); border: 1px solid var(--hairline); border-radius: 20px; font-size: 17px; line-height: 1.4; }
+.note svg { width: 24px; height: 24px; flex: none; color: var(--muted); }
+.sheet { position: fixed; inset: 0; z-index: 10; background: rgba(26,26,25,.25); display: flex; align-items: flex-end; justify-content: center; }
+.sheet[hidden] { display: none; }
+.panel { width: 100%; max-width: 430px; max-height: calc(100dvh - 48px); overflow-y: auto; padding: 12px 20px 28px; background: var(--ground); border-radius: 28px 28px 0 0; border-top: 1px solid var(--hairline); }
+.grab { width: 40px; height: 5px; margin: 0 auto; border-radius: 3px; background: var(--hairline); }
+.panel h2 { margin: 16px 0 12px; font-weight: 400; font-size: 28px; letter-spacing: -.02em; }
+.tog { width: 52px; height: 32px; position: relative; border: 1px solid var(--hairline); border-radius: 16px; background: transparent; padding: 0; }
+.tog::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 12px; background: var(--muted); transition: transform .15s; }
+.tog[aria-checked="true"] { background: var(--work); }
+.tog[aria-checked="true"]::after { transform: translateX(21px); background: var(--ground); }
+.tests { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.tests button { min-height: 48px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface); font-size: 15px; font-weight: 500; }
+.sub-title { margin: 16px 0 0; }
+.row .name { font-family: var(--display); font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: .03em; }
+.bottomrow { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.arrow { width: 56px; height: 56px; flex: none; stroke-width: 3; stroke-linecap: square; stroke-linejoin: miter; }
+.dark { background: var(--ink); color: #fff; border-radius: 28px; padding: 20px; margin-top: 16px; }
+.dark .label { color: rgba(255,255,255,.7); }
+.head p, .day strong { font-family: var(--sans); }
+.day strong { font-family: var(--display); font-size: 15px; font-weight: 400; text-transform: uppercase; }
+.panel { background: rgba(219,218,216,.78); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+.secondary { border: 1px solid var(--ink); }
+.tests button { border: 1px solid var(--ink); border-radius: 999px; background: transparent; }
+.card, .note { border-radius: 28px; }
+#runTimer { font-size: clamp(84px, 27vw, 112px); }
+#runTimer.long { font-size: clamp(62px, 19vw, 80px); }
+#readyNum { font-size: clamp(120px, 40vw, 168px); }
+.val { font-family: var(--display); font-size: 22px; font-weight: 400; }
+.stats .label { font-family: var(--display); font-size: 26px; letter-spacing: -.01em; text-transform: none; margin-top: 8px; }
+#bTotal .n, #ofTxt { font-family: var(--display); font-size: 20px; letter-spacing: -.01em; text-transform: none; color: var(--ink); }
+#ofTxt { font-size: 15px; }
+.preview .nums { font-family: var(--display); }
+.nextrow b { font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div id="app">
+<div class="deco" aria-hidden="true">
+<div class="ring" style="left:-210px;top:-120px;width:380px;height:380px"></div>
+<div class="ring" style="left:-150px;top:90px;width:400px;height:400px"></div>
+<div class="ring" style="left:-60px;top:420px;width:560px;height:560px"></div>
+<div class="blob"></div>
+</div>
+
+<section id="home">
+<div class="head">
+<p>Hi, your next session is <b id="selName">HIDIT</b>.</p>
+<div class="day"><strong id="dayName">Today</strong><span class="label" id="dayDate"></span></div>
+</div>
+<button class="iconbtn" id="openSettings" aria-label="Settings" style="margin-top:20px"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+<div class="list" id="presets" role="radiogroup" aria-label="Workout"></div>
+<div class="dark"><span class="label" id="summary"></span><div class="bottomrow" style="margin-top:12px"><div class="timer long" id="sumTime">0:00</div><svg class="arrow" viewBox="0 0 56 56" aria-hidden="true"><path d="M14 14 L42 42 M42 22 V42 H22"/></svg></div></div>
+<div class="spacer"></div>
+<button class="primary" id="start">Start</button>
+</section>
+
+<section id="builder" hidden>
+<div class="top"><button class="iconbtn" id="back" aria-label="Back to workouts"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button></div>
+<h1 id="bTitle">HIDIT builder</h1>
+<div class="card" id="bFields"></div>
+<div class="card preview">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:15px;font-weight:600">Preview</b><span class="label" id="bTotal"></span></div>
+<div class="bars" id="bars"></div>
+<div class="nums label" id="nums"></div>
+<div class="legend label"><span class="lw">Work</span><span class="lr">Recover</span></div>
+<div class="label warn" id="bWarn" hidden style="margin-top:8px"></div>
+</div>
+<div class="spacer" style="min-height:24px"></div>
+<button class="primary" id="bStart">Start</button>
+</section>
+
+<section id="ready" hidden>
+<span class="label">Interval timer</span>
+<div class="center">
+<div class="phase" id="readyLabel">Get ready</div>
+<div class="label" id="readyFirst" style="margin-top:12px"></div>
+</div>
+<div class="bottomrow"><div class="timer" id="readyNum" aria-live="off">10</div><svg class="arrow" viewBox="0 0 56 56" aria-hidden="true"><path d="M14 14 L42 42 M42 22 V42 H22"/></svg></div>
+<button class="primary" id="skip" style="margin-top:32px">Skip</button>
+<button class="quiet" id="cancel" style="margin-top:8px">Cancel</button>
+</section>
+
+<section id="run" hidden data-phase="work">
+<div style="display:flex;justify-content:space-between"><span class="label" id="runName">HIDIT</span><span class="label" id="runStep"></span></div>
+<div class="center">
+<svg class="arrow" viewBox="0 0 56 56" style="color:var(--pc);margin-bottom:20px" aria-hidden="true"><path id="arrowPath" d="M14 42 L42 14 M22 14 H42 V34"/></svg>
+<div class="label" id="pct" style="font-family:var(--display);font-size:26px;color:var(--pc)">0%</div>
+<div class="track" style="width:70%;margin-top:14px"><div class="base"></div><div class="fill" id="fill"></div><div class="dot" id="dot"></div></div>
+<div class="phase" id="runPhase" style="margin-top:14px">Run hard</div>
+</div>
+<div class="bottomrow"><div class="timer" id="runTimer" role="timer">0:00</div></div>
+<div class="nextrow label" style="margin-top:16px"><b id="nextTxt"></b><span id="ofTxt"></span></div>
+<div class="actions">
+<button class="primary" id="pause">Pause</button>
+<button class="secondary" id="endRun" hidden>End run</button>
+</div>
+</section>
+
+<section id="finish" hidden>
+<span class="label">Interval timer</span>
+<div class="phase" style="margin-top:96px">Run finished</div>
+<div class="stats">
+<div>Steps completed<span class="label" id="fSteps"></span></div>
+<div>Longest work<span class="label" id="fTotal2"></span></div>
+<div>Work time<span class="label" id="fWork" style="color:var(--work)"></span></div>
+<div>Recover time<span class="label" id="fRec" style="color:var(--recover)"></span></div>
+</div>
+<div class="spacer"></div>
+<div class="bottomrow"><div class="timer long" id="fTotal">0:00</div><svg class="arrow" viewBox="0 0 56 56" aria-hidden="true"><path d="M14 14 L42 42 M42 22 V42 H22"/></svg></div>
+<button class="primary" id="done" style="margin-top:32px">Done</button>
+</section>
+
+<section id="first" hidden>
+<div class="center" style="align-items:flex-start;text-align:left">
+<div class="glyph" style="height:44px;width:auto;justify-content:flex-start;gap:5px"><i style="width:7px;height:44px"></i><i style="width:7px;height:34px"></i><i style="width:7px;height:24px"></i><i style="width:7px;height:14px"></i></div>
+<h1 style="margin-top:24px">Interval timer</h1>
+<p style="margin:8px 0 0;font-size:17px;color:var(--muted)">HIDIT and fixed presets for VO2 max training.</p>
+<div class="note"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>Check with a doctor before high-intensity training</span></div>
+</div>
+<button class="primary" id="gotit">Got it</button>
+</section>
+
+<div class="sheet" id="settings" hidden>
+<div class="panel" role="dialog" aria-modal="true" aria-label="Settings">
+<div class="grab"></div>
+<h2>Settings</h2>
+<div class="card" style="margin-top:0">
+<div class="line" style="display:block"><div class="k" style="font-size:17px;font-weight:500;margin-bottom:8px">Sound</div>
+<div class="seg" data-set="sound"><button data-v="on">On</button><button data-v="off">Off</button><button data-v="voice">Voice only</button></div></div>
+<div class="line"><span class="k">Haptics</span><button class="tog" role="switch" data-tog="haptics" aria-label="Haptics"></button></div>
+<div class="line"><span class="k">Volume boost</span><button class="tog" role="switch" data-tog="boost" aria-label="Volume boost"></button></div>
+<div class="line"><span class="k">Countdown ticks</span><button class="tog" role="switch" data-tog="ticks" aria-label="Countdown ticks"></button></div>
+<div class="line" style="display:block"><div class="k" style="font-size:17px;font-weight:500;margin-bottom:8px">Countdown length</div>
+<div class="seg" data-set="cd"><button data-v="0">Off</button><button data-v="5">5 s</button><button data-v="10">10 s</button><button data-v="15">15 s</button></div></div>
+</div>
+<p class="label sub-title">Test cues</p>
+<div class="tests"><button data-test="run">Run</button><button data-test="recover">Recover</button><button data-test="finish">Finish</button></div>
+<button class="primary" id="closeSettings" style="margin-top:24px">Done</button>
+</div>
+</div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem('hidit.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem('hidit.' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  var settings = Object.assign({ sound: 'on', haptics: true, boost: false, ticks: true, cd: 10 }, store.get('settings', {}));
+  var cfg = Object.assign({ hidit: { start: 180, steps: 5, down: 30, unit: 's' }, custom: { work: 45, rec: 30, steps: 6 } }, store.get('cfg', {}));
+  var PRESETS = [
+    { id: 'hidit', name: 'HIDIT', sub: 'Decreasing intervals, 3:2 ratio', editable: true, glyph: true },
+    { id: 'n4x4', name: 'Norwegian 4x4', sub: '4 steps, 4:00 work, 3:00 recover', fixed: [4, 240, 180] },
+    { id: 's3030', name: '30/30', sub: '10 steps, 30 s work, 30 s recover', fixed: [10, 30, 30] },
+    { id: 'tabata', name: 'Tabata', sub: '8 steps, 20 s work, 10 s recover', fixed: [8, 20, 10] },
+    { id: 'custom', name: 'Custom', sub: 'Set your own work and recover', editable: true }
+  ];
+  var sel = store.get('sel', 'hidit');
+  var editing = 'hidit';
+
+  function fmt(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  function longFmt(s) { s = Math.round(s); return Math.floor(s / 60) + ' min ' + String(s % 60).padStart(2, '0') + ' s'; }
+
+  /* schedule: every HIDIT step is work then recover at exactly 2/3 */
+  function ladder() {
+    var h = cfg.hidit, out = [], w = h.start, clipped = false;
+    for (var i = 0; i < h.steps; i++) {
+      if (w < 10) { clipped = true; break; }
+      out.push({ w: Math.round(w), r: Math.round(w * 2 / 3) });
+      w = h.unit === 's' ? w - h.down : w * (1 - h.down / 100);
+    }
+    ladder.clipped = clipped || out.length < h.steps;
+    return out;
+  }
+  function stepsFor(id) {
+    if (id === 'hidit') return ladder();
+    if (id === 'custom') { var c = cfg.custom, o = []; for (var i = 0; i < c.steps; i++) o.push({ w: c.work, r: c.rec }); return o; }
+    var f = PRESETS.filter(function (p) { return p.id === id; })[0].fixed, o2 = [];
+    for (var j = 0; j < f[0]; j++) o2.push({ w: f[1], r: f[2] });
+    return o2;
+  }
+  function total(steps) { return steps.reduce(function (a, s) { return a + s.w + s.r; }, 0); }
+  function preset(id) { return PRESETS.filter(function (p) { return p.id === id; })[0]; }
+
+  /* screens */
+  var SCREENS = ['home', 'builder', 'ready', 'run', 'finish', 'first'];
+  function show(name) {
+    SCREENS.forEach(function (s) { $(s).hidden = s !== name; });
+    document.body.dataset.calm = (name === 'home' || name === 'ready' || name === 'finish' || name === 'first') ? '1' : '0';
+    window.scrollTo(0, 0);
+  }
+
+  /* home */
+  function renderHome() {
+    var d = new Date();
+    $('dayName').textContent = d.toLocaleDateString(undefined, { weekday: 'long' });
+    $('dayDate').textContent = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+    $('selName').textContent = preset(sel).name;
+    var list = $('presets'); list.innerHTML = '';
+    PRESETS.forEach(function (p) {
+      var wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;align-items:center;border-top:1px dashed var(--dash)';
+      var b = document.createElement('button'); b.className = 'row'; b.style.border = '0'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(sel === p.id));
+      var g = '<span class="glyph">' + (p.glyph ? '<i style="height:26px"></i><i style="height:20px"></i><i style="height:14px"></i><i style="height:8px"></i>' : '') + '</span>';
+      b.innerHTML = g + '<span class="txt"><span class="name">' + p.name + '</span><span class="sub">' + p.sub + '</span></span><svg class="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+      b.addEventListener('click', function () { sel = p.id; store.set('sel', sel); renderHome(); });
+      wrap.appendChild(b);
+      if (p.editable) {
+        var e = document.createElement('button'); e.className = 'edit'; e.setAttribute('aria-label', 'Edit ' + p.name);
+        e.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
+        e.addEventListener('click', function () { openBuilder(p.id); });
+        wrap.appendChild(e);
+      }
+      list.appendChild(wrap);
+    });
+    list.firstChild.style.borderTop = '0';
+    var st = stepsFor(sel);
+    $('summary').textContent = preset(sel).name + ', ' + st.length + ' steps of intervals';
+    $('sumTime').textContent = fmt(total(st));
+  }
+
+  /* builder */
+  function fieldRows() {
+    if (editing === 'hidit') {
+      var h = cfg.hidit, st = ladder();
+      return [
+        { k: 'Start work', v: fmt(h.start), key: 'start', d: 15 },
+        { k: 'Steps', v: String(h.steps), key: 'steps', d: 1 },
+        { k: 'Step-down', v: h.unit === 's' ? h.down + ' s' : h.down + '%', key: 'down', d: h.unit === 's' ? 5 : 5, seg: true },
+        { k: 'Recovery', sm: 'Work x 2/3, set automatically', v: fmt(Math.round(h.start * 2 / 3)), ro: true }
+      ];
+    }
+    var c = cfg.custom;
+    return [
+      { k: 'Work', v: fmt(c.work), key: 'work', d: 5 },
+      { k: 'Recover', v: fmt(c.rec), key: 'rec', d: 5 },
+      { k: 'Steps', v: String(c.steps), key: 'steps', d: 1 }
+    ];
+  }
+  function clampCfg() {
+    var h = cfg.hidit, c = cfg.custom;
+    h.start = Math.min(600, Math.max(60, h.start)); h.steps = Math.min(10, Math.max(2, h.steps));
+    h.down = Math.min(h.unit === 's' ? 60 : 40, Math.max(5, h.down));
+    c.work = Math.min(600, Math.max(10, c.work)); c.rec = Math.min(600, Math.max(5, c.rec)); c.steps = Math.min(20, Math.max(1, c.steps));
+  }
+  function renderBuilder() {
+    $('bTitle').textContent = editing === 'hidit' ? 'HIDIT builder' : 'Custom workout';
+    var box = $('bFields'); box.innerHTML = '';
+    fieldRows().forEach(function (r) {
+      var line = document.createElement('div'); line.className = 'line';
+      var html = '<span class="k">' + r.k + (r.sm ? '<small>' + r.sm + '</small>' : '') + '</span>';
+      if (r.ro) html += '<svg viewBox="0 0 24 24" width="16" height="16" aria-label="Read only"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg><span class="val ro">' + r.v + '</span>';
+      else html += '<button class="step" data-d="-' + r.d + '" aria-label="Decrease ' + r.k + '">&minus;</button><span class="val">' + r.v + '</span><button class="step" data-d="' + r.d + '" aria-label="Increase ' + r.k + '">+</button>';
+      line.innerHTML = html;
+      if (!r.ro) Array.prototype.forEach.call(line.querySelectorAll('.step'), function (b) {
+        b.addEventListener('click', function () {
+          var o = editing === 'hidit' ? cfg.hidit : cfg.custom; o[r.key] += Number(b.dataset.d); clampCfg(); store.set('cfg', cfg); renderBuilder();
+        });
+      });
+      box.appendChild(line);
+      if (r.seg) {
+        var s = document.createElement('div'); s.className = 'line segline';
+        s.innerHTML = '<div class="seg" style="flex:1"><button data-u="s">Seconds</button><button data-u="p">Percent</button></div>';
+        Array.prototype.forEach.call(s.querySelectorAll('button'), function (b) {
+          b.setAttribute('aria-pressed', String((b.dataset.u === 's') === (cfg.hidit.unit === 's')));
+          b.addEventListener('click', function () { cfg.hidit.unit = b.dataset.u === 's' ? 's' : 'p'; cfg.hidit.down = b.dataset.u === 's' ? 30 : 15; store.set('cfg', cfg); renderBuilder(); });
+        });
+        box.appendChild(s);
+      }
+    });
+    var st = stepsFor(editing), max = Math.max.apply(null, st.map(function (s) { return s.w; }));
+    $('bars').innerHTML = st.map(function (s) { return '<div class="pair"><i class="w" style="height:' + Math.max(4, Math.round(s.w / max * 84)) + 'px"></i><i class="r" style="height:' + Math.max(4, Math.round(s.r / max * 84)) + 'px"></i></div>'; }).join('');
+    $('nums').innerHTML = st.map(function (s, i) { return '<span>' + (i + 1) + '</span>'; }).join('');
+    $('bTotal').innerHTML = 'Total <span class="n">' + fmt(total(st)) + '</span>';
+    var warn = editing === 'hidit' && ladder.clipped;
+    $('bWarn').hidden = !warn; if (warn) $('bWarn').textContent = 'Work would drop under 0:10, so the ladder stops at step ' + st.length;
+  }
+  function openBuilder(id) { editing = id; sel = id; store.set('sel', sel); renderBuilder(); show('builder'); }
+
+  /* audio, haptics, voice */
+  var actx = null;
+  function ctx() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {} return actx; }
+  function tone(f, dur, vol, at, f2) {
+    if (settings.sound !== 'on') return; var c = ctx(); if (!c) return;
+    var t = c.currentTime + (at || 0), o = c.createOscillator(), g = c.createGain(), v = Math.min(1, vol * (settings.boost ? 1.8 : 1));
+    o.type = 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.linearRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+  }
+  function buzz(p) { if (settings.haptics && navigator.vibrate) { try { navigator.vibrate(p); } catch (e) {} } }
+  function say(t) { if (settings.sound !== 'voice' || !window.speechSynthesis) return; try { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(t)); } catch (e) {} }
+  var cue = {
+    run: function () { tone(1047, 0.09, 0.35, 0); tone(1319, 0.12, 0.35, 0.16); buzz([40, 70, 40]); },
+    recover: function () { tone(520, 0.7, 0.28, 0, 340); buzz([420]); },
+    tickRise: function () { tone(1245, 0.06, 0.3); buzz(15); },
+    tickFlat: function () { tone(660, 0.06, 0.18); buzz(10); },
+    softTick: function () { tone(820, 0.03, 0.12); },
+    beep: function (n) { tone([0, 880, 1047, 1245][n], 0.1, 0.32); buzz(15); },
+    finish: function () { tone(784, 0.16, 0.35, 0); tone(988, 0.16, 0.35, 0.2); tone(1319, 0.3, 0.35, 0.4); buzz([90, 60, 90, 60, 160]); }
+  };
+
+  /* run engine: remaining seconds tracked from a monotonic clock, phases precomputed at start */
+  var R = null, timerId = null, wake = null;
+  function buildPhases(steps) {
+    var ph = [];
+    if (settings.cd > 0) ph.push({ kind: 'ready', dur: settings.cd });
+    steps.forEach(function (s, i) { ph.push({ kind: 'work', dur: s.w, step: i + 1, next: s.r }); ph.push({ kind: 'recover', dur: s.r, step: i + 1, next: steps[i + 1] ? steps[i + 1].w : 0 }); });
+    return ph;
+  }
+  function startRun() {
+    ctx();
+    var steps = stepsFor(sel); if (!steps.length) return;
+    R = { steps: steps, ph: buildPhases(steps), i: 0, rem: 0, last: performance.now(), paused: false, resume: 0, lastSec: -1, name: preset(sel).name, done: false };
+    R.rem = R.ph[0].dur;
+    try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { wake = l; }, function () {}); } catch (e) {}
+    enterPhase(true);
+    timerId = setInterval(tick, 100);
+  }
+  function stopTimer() { clearInterval(timerId); timerId = null; try { if (wake) wake.release(); } catch (e) {} wake = null; }
+  function enterPhase(first) {
+    var p = R.ph[R.i]; R.lastSec = -1;
+    if (p.kind === 'ready') { $('readyFirst').textContent = 'First: run hard ' + fmt(R.steps[0].w); show('ready'); renderReady(); return; }
+    $('run').dataset.phase = p.kind;
+    if (p.kind === 'work') { cue.run(); say('Run. Step ' + p.step); } else { cue.recover(); say('Recover'); }
+    $('runName').textContent = R.name;
+    $('runPhase').textContent = p.kind === 'work' ? 'Run hard' : 'Recover';
+    $('runStep').textContent = 'Step ' + p.step + ' of ' + R.steps.length;
+    $('nextTxt').textContent = p.kind === 'work' ? 'Next: recover ' + fmt(p.next) : (p.next ? 'Next: run hard ' + fmt(p.next) : 'Next: finish');
+    $('ofTxt').textContent = 'of ' + fmt(p.dur);
+    show('run'); renderRun();
+  }
+  function renderReady() { $('readyNum').textContent = String(Math.max(0, Math.ceil(R.rem))); }
+  function renderRun() {
+    var p = R.ph[R.i], hot = R.resume > 0 ? false : (p.dur > 20 && R.rem <= 3 && R.rem > 0);
+    var t = $('runTimer'); t.textContent = R.resume > 0 ? String(Math.ceil(R.resume)) : fmt(Math.ceil(R.rem)); t.classList.toggle('hot', hot); t.classList.toggle('long', t.textContent.length > 4);
+    $('runPhase').textContent = R.paused ? 'Paused' : (R.resume > 0 ? 'Ready' : (p.kind === 'work' ? 'Run hard' : 'Recover'));
+    var frac = p.kind === 'work' ? 1 - R.rem / p.dur : R.rem / p.dur; frac = Math.min(1, Math.max(0, frac));
+    $('pct').textContent = Math.round(frac * 100) + '%'; $('arrowPath').setAttribute('d', p.kind === 'work' ? 'M14 42 L42 14 M22 14 H42 V34' : 'M14 14 L42 42 M42 22 V42 H22');
+    $('fill').style.width = (frac * 100) + '%'; $('dot').style.left = (frac * 100) + '%';
+    $('run').dataset.paused = R.paused ? '1' : '0';
+    $('pause').textContent = R.paused ? 'Resume' : 'Pause'; $('endRun').hidden = !R.paused;
+  }
+  function tick() {
+    if (!R) return;
+    var now = performance.now(), dt = (now - R.last) / 1000; R.last = now;
+    if (R.paused) return;
+    if (R.resume > 0) { R.resume -= dt; var rs = Math.ceil(R.resume); if (rs !== R.lastSec && rs > 0) { R.lastSec = rs; if (settings.ticks) cue.beep(Math.min(3, rs)); } if (R.resume <= 0) { R.resume = 0; R.lastSec = -1; } renderRun(); return; }
+    R.rem -= dt;
+    var p = R.ph[R.i], sec = Math.ceil(R.rem);
+    if (sec !== R.lastSec && sec > 0) {
+      R.lastSec = sec;
+      if (p.kind === 'ready') { if (sec <= 3) cue.beep(sec); else if (settings.ticks && sec <= 10) cue.softTick(); }
+      else if (settings.ticks && p.dur > 20 && sec <= 3) { if (p.kind === 'work') cue.tickRise(); else cue.tickFlat(); }
+    }
+    while (R && R.rem <= 0) {
+      if (R.i + 1 >= R.ph.length) { finishRun(); return; }
+      var over = -R.rem; R.i++; R.rem = R.ph[R.i].dur - over; enterPhase(false);
+    }
+    if (R) { if (R.ph[R.i].kind === 'ready') renderReady(); else renderRun(); }
+  }
+  function finishRun() {
+    stopTimer(); cue.finish(); say('Finished');
+    var w = 0, r = 0; R.steps.forEach(function (s) { w += s.w; r += s.r; });
+    $('fTotal').textContent = fmt(w + r); $('fTotal').classList.toggle('long', fmt(w + r).length > 4); $('fTotal2').textContent = fmt(Math.max.apply(null, R.steps.map(function (x) { return x.w; }))); $('fSteps').textContent = R.steps.length + '/' + R.steps.length;
+    $('fWork').textContent = fmt(w); $('fRec').textContent = fmt(r);
+    R = null; show('finish');
+  }
+  function endRun() { stopTimer(); R = null; try { speechSynthesis.cancel(); } catch (e) {} renderHome(); show('home'); }
+
+  /* settings */
+  function renderSettings() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tog]'), function (b) { b.setAttribute('aria-checked', String(!!settings[b.dataset.tog])); });
+    Array.prototype.forEach.call(document.querySelectorAll('.seg[data-set]'), function (g) {
+      Array.prototype.forEach.call(g.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(String(settings[g.dataset.set]) === b.dataset.v)); });
+    });
+  }
+  function saveSettings() { store.set('settings', settings); renderSettings(); }
+
+  $('start').addEventListener('click', startRun);
+  $('bStart').addEventListener('click', startRun);
+  $('back').addEventListener('click', function () { renderHome(); show('home'); });
+  $('skip').addEventListener('click', function () { if (R) { R.rem = 0; } });
+  $('cancel').addEventListener('click', endRun);
+  $('pause').addEventListener('click', function () {
+    if (!R) return;
+    if (R.paused) { R.paused = false; R.resume = 3; R.last = performance.now(); R.lastSec = -1; ctx(); }
+    else { R.paused = true; }
+    renderRun();
+  });
+  $('endRun').addEventListener('click', endRun);
+  $('done').addEventListener('click', function () { renderHome(); show('home'); });
+  $('gotit').addEventListener('click', function () { store.set('seenHealth', true); renderHome(); show('home'); });
+  $('openSettings').addEventListener('click', function () { renderSettings(); $('settings').hidden = false; });
+  $('closeSettings').addEventListener('click', function () { $('settings').hidden = true; });
+  $('settings').addEventListener('click', function (e) { if (e.target === $('settings')) $('settings').hidden = true; });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-tog]'), function (b) {
+    b.addEventListener('click', function () { settings[b.dataset.tog] = !settings[b.dataset.tog]; saveSettings(); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.seg[data-set] button'), function (b) {
+    b.addEventListener('click', function () { var k = b.parentNode.dataset.set; settings[k] = k === 'cd' ? Number(b.dataset.v) : b.dataset.v; saveSettings(); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-test]'), function (b) {
+    b.addEventListener('click', function () {
+      ctx(); var t = b.dataset.test;
+      if (t === 'run') { cue.run(); say('Run'); } else if (t === 'recover') { cue.recover(); say('Recover'); } else { cue.finish(); }
+    });
+  });
+
+  renderHome();
+  show(store.get('seenHealth', false) ? 'home' : 'first');
+})();
+</script>

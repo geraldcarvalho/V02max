@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Run</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600&family=Michroma&display=swap">
+<style>body{margin:0}button{font-family:inherit}</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; padding: 72px 20px 32px; display: flex; flex-direction: column; background: {{v.bg}}; color: {{c.text}}; --sec: {{c.sec}}; --line: {{c.line}}; --accent: {{c.accent}}; --onaccent: {{c.onaccent}}; --phase: {{v.phase}}; font-family: 'Hanken Grotesk', -apple-system, system-ui, sans-serif">
+<div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sec)">HIDIT</div>
+<div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center">
+<div style="font-family: 'Michroma', 'Arial Black', sans-serif; font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.04em; color: {{v.labelColor}}">{{v.label}}</div>
+<div style="font-family: 'Michroma', 'Arial Black', sans-serif; font-size: 84px; font-weight: 400; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 8px; color: {{v.timerColor}}; opacity: {{v.timerOpacity}}">{{v.time}}</div>
+<div style="margin-top: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sec)">Step 2 of 5</div>
+</div>
+<div style="width: 100%">
+<div style="position: relative; height: 12px; display: flex; align-items: center">
+<div style="width: 100%; height: 1px; background: rgba(26,26,25,0.3)"></div>
+<div style="position: absolute; left: 0; width: {{v.fill}}; height: 2px; background: {{v.barColor}}"></div>
+<div style="position: absolute; left: {{v.fill}}; margin-left: -6px; width: 12px; height: 12px; border-radius: 6px; background: {{v.barColor}}"></div>
+</div>
+<div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sec)">
+<div style="font-weight: 600; color: {{c.text}}">{{v.next}}</div>
+<div style="font-variant-numeric: tabular-nums">{{v.total}}</div>
+</div>
+</div>
+<div style="margin-top: 32px">
+<button style="height: 72px; width: 100%; border: 0; border-radius: 36px; background: var(--accent); color: var(--onaccent); font-size: 20px; font-weight: 600">{{v.primary}}</button>
+<sc-if value="{{v.paused}}" hint-placeholder-val="{{ false }}">
+<button style="margin-top: 12px; height: 72px; width: 100%; border: 1px solid var(--line); border-radius: 36px; background: transparent; color: {{c.text}}; font-size: 20px; font-weight: 600">End run</button>
+</sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["light","dark"],"default":"light"},"phase":{"editor":"enum","options":["work","recover"],"default":"work"},"paused":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const dark = (this.props.mode ?? 'light') === 'dark';
+    const c = dark
+      ? { bg: '#1A1A19', text: '#F5F4EE', sec: '#A8A59D', work: '#5CC49A', rec: '#7AA8E6', accent: '#D9805F', onaccent: '#1A1A19', line: 'rgba(245,244,238,0.14)' }
+      : { bg: '#DBDAD8', text: '#1A1A19', sec: '#5E5B58', work: '#B93A26', rec: '#4A4746', accent: '#1A1A19', onaccent: '#FFFFFF', line: 'rgba(26,26,25,0.16)' };
+    const paused = this.props.paused === true || this.props.paused === 'true';
+    const rec = this.props.phase === 'recover';
+    const pc = rec ? c.rec : c.work;
+    const v = {
+      paused,
+      phase: pc,
+      bg: paused ? c.bg : 'color-mix(in srgb, ' + pc + ' 12%, ' + c.bg + ')',
+      label: paused ? 'Paused' : (rec ? 'Recover' : 'Run hard'),
+      labelColor: paused ? c.sec : pc,
+      timerColor: pc,
+      timerOpacity: paused ? '0.4' : '1',
+      time: rec ? '1:12' : '1:53',
+      fill: rec ? '72%' : '25%',
+      barColor: pc,
+      track: 'color-mix(in srgb, ' + pc + ' 20%, transparent)',
+      next: rec ? 'Next: run hard 2:00' : 'Next: recover 1:40',
+      total: rec ? 'of 1:40' : 'of 2:30',
+      primary: paused ? 'Resume' : 'Pause'
+    };
+    if (paused) { v.time = '1:53'; v.fill = '25%'; v.next = 'Next: recover 1:40'; v.total = 'of 2:30'; }
+    return { c, v };
+  }
+}
+</script>
+</body>
+</html>

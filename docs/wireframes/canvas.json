@@ -1,0 +1,18 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-09-28T12:00:00Z"},"title":"HIDIT interval timer wireframes","launch":{"view":"canvas"},"pages":[],"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":390,"h":844,"title":"1 Home"},
+"Builder.dc.html":{"x":470,"y":0,"w":390,"h":844,"title":"2 HIDIT builder, default"},
+"BuilderEdited.dc.html":{"x":940,"y":0,"w":390,"h":844,"title":"2 HIDIT builder, edited"},
+"Ready.dc.html":{"x":1410,"y":0,"w":390,"h":844,"title":"3 Get ready"},
+"Run.dc.html":{"x":1880,"y":0,"w":390,"h":844,"title":"4 Run, work"},
+"RunRecover.dc.html":{"x":2350,"y":0,"w":390,"h":844,"title":"5 Run, recover"},
+"Paused.dc.html":{"x":2820,"y":0,"w":390,"h":844,"title":"6 Paused"},
+"Finish.dc.html":{"x":3290,"y":0,"w":390,"h":844,"title":"7 Finish"},
+"First.dc.html":{"x":3760,"y":0,"w":390,"h":844,"title":"8 First launch"},
+"Settings.dc.html":{"x":4230,"y":0,"w":390,"h":844,"title":"9 Settings sheet"},
+"Components.dc.html":{"x":0,"y":1300,"w":1800,"h":900,"title":"Component set"},
+"Tokens.dc.html":{"x":1880,"y":1300,"w":1800,"h":900,"title":"Color and type tokens"}
+},"order":["Main.dc.html","Builder.dc.html","BuilderEdited.dc.html","Ready.dc.html","Run.dc.html","RunRecover.dc.html","Paused.dc.html","Finish.dc.html","First.dc.html","Settings.dc.html","Components.dc.html","Tokens.dc.html"],
+"notes":{
+"t1":{"x":0,"y":-260,"text":"HIDIT timer screens","kind":"title1","maxW":4620},
+"t3":{"x":0,"y":1040,"text":"Components and tokens","kind":"title1","maxW":3680}
+},"designSystems":[]}

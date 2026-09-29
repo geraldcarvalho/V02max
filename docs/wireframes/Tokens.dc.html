@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Color and type tokens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600&family=Michroma&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1800px; height: 900px; box-sizing: border-box; padding: 48px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; background: #DBDAD8; color: #1A1A19; font-family: 'Hanken Grotesk', -apple-system, system-ui, sans-serif">
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 15px; font-weight: 600">Color</div>
+<sc-for list="{{light}}" as="t" hint-placeholder-count="7">
+<div style="display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 0 12px; border: 1px solid rgba(26,26,25,0.16); border-radius: 16px; background: #E7E6E3">
+<div style="width: 36px; height: 36px; border-radius: 12px; border: 1px solid rgba(26,26,25,0.16); background: {{t.hex}}"></div>
+<div style="flex-grow: 1; font-size: 15px">{{t.name}}</div>
+<div style="font-size: 13px; color: #5E5B58; font-variant-numeric: tabular-nums">{{t.hex}}</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="font-size: 15px; font-weight: 600">Type and shape</div>
+<div style="background: #E7E6E3; border: 1px solid rgba(26,26,25,0.16); border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<div><div style="font-family: 'Michroma', 'Arial Black', sans-serif; font-size: 56px; font-weight: 400; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">1:53</div><div style="font-size: 13px; color: #5E5B58; margin-top: 4px">Numerals, Michroma, 84 to 112 pt, tabular</div></div>
+<div><div style="font-family: 'Michroma', 'Arial Black', sans-serif; font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.04em">Run hard</div><div style="font-size: 13px; color: #5E5B58; margin-top: 2px">Phase name, Michroma 13 pt uppercase</div></div>
+<div><div style="font-size: 17px">Steps completed</div><div style="font-size: 13px; color: #5E5B58; margin-top: 2px">Body, Hanken Grotesk 17 pt light</div></div>
+<div><div style="font-size: 15px; color: #5E5B58">Next: recover 1:40</div><div style="font-size: 13px; color: #5E5B58; margin-top: 2px">Labels, Hanken Grotesk 11 pt uppercase, secondary color</div></div>
+</div>
+<div style="font-size: 13px; color: #5E5B58">Michroma for numerals and headings, Hanken Grotesk for text. Dynamic Type supported.</div>
+<div style="display: flex; gap: 12px; align-items: center">
+<div style="width: 80px; height: 56px; border-radius: 20px; border: 1px solid rgba(26,26,25,0.16); background: #E7E6E3"></div>
+<div style="width: 80px; height: 56px; border-radius: 16px; border: 1px solid rgba(26,26,25,0.16); background: #E7E6E3"></div>
+<div style="width: 120px; height: 56px; border-radius: 28px; background: #1A1A19"></div>
+</div>
+<div style="font-size: 13px; color: #5E5B58">Corners: 20 pt cards, 16 pt buttons, pill for the main action. Flat, hairline borders, 20 pt side margins.</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      light: [
+        { name: 'Background', hex: '#DBDAD8' }, { name: 'Surface', hex: '#E7E6E3' },
+        { name: 'Text primary', hex: '#1A1A19' }, { name: 'Text secondary', hex: '#5E5B58' },
+        { name: 'Work (run)', hex: '#B93A26' }, { name: 'Recover', hex: '#4A4746' },
+        { name: 'Action, main button', hex: '#1A1A19' }, { name: 'Signal, gradient and focus only', hex: '#C4432B' }, { name: 'Icon button', hex: '#8E8584' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
