@@ -125,8 +125,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
 .row .name { font-family: var(--display); font-size: 13px; font-weight: 400; text-transform: uppercase; letter-spacing: .03em; }
 .bottomrow { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .arrow { width: 56px; height: 56px; flex: none; stroke-width: 3; stroke-linecap: square; stroke-linejoin: miter; }
-.dark { background: var(--ink); color: #fff; border-radius: 28px; padding: 20px; margin-top: 16px; }
-.dark .label { color: rgba(255,255,255,.7); }
+.dark { background: var(--surface); border: 1px solid var(--hairline); color: var(--ink); border-radius: 28px; padding: 20px; margin-top: 16px; }
 .head p, .day strong { font-family: var(--sans); }
 .day strong { font-family: var(--display); font-size: 15px; font-weight: 400; text-transform: uppercase; }
 .panel { background: rgba(219,218,216,.78); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
@@ -236,11 +235,10 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
 </section>
 
 <div class="sheet" id="picker" hidden>
-<div class="panel" role="dialog" aria-modal="true" aria-label="Choose a workout">
+<div class="panel" role="dialog" aria-modal="true" aria-label="Choose a workout" style="padding-bottom:40px">
 <div class="grab"></div>
 <h2>Workouts</h2>
 <div id="presets" role="radiogroup" aria-label="Workout"></div>
-<button class="primary" id="closePicker" style="margin-top:24px">Done</button>
 </div>
 </div>
 
@@ -532,7 +530,6 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
   $('gotit').addEventListener('click', function () { store.set('seenHealth', true); renderHome(); show('home'); });
   $('openSettings').addEventListener('click', function () { renderSettings(); $('settings').hidden = false; });
   $('closeSettings').addEventListener('click', function () { $('settings').hidden = true; });
-  $('closePicker').addEventListener('click', function () { $('picker').hidden = true; });
   $('picker').addEventListener('click', function (e) { if (e.target === $('picker')) $('picker').hidden = true; });
   $('settings').addEventListener('click', function (e) { if (e.target === $('settings')) $('settings').hidden = true; });
   Array.prototype.forEach.call(document.querySelectorAll('[data-tog]'), function (b) {

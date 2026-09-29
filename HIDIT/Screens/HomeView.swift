@@ -96,7 +96,7 @@ struct HomeView: View {
     }
 }
 
-/// Black card that repeats the session total as a big numeral.
+/// Light card that repeats the session total as a big numeral.
 struct SummaryCard: View {
     let caption: String
     let total: String
@@ -105,12 +105,13 @@ struct SummaryCard: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(caption)
                 .typeStyle(.label, uppercase: true)
-                .foregroundStyle(Tokens.Colors.onInkMuted)
-            NumeralRow(text: total, token: .total, color: Tokens.Colors.onInk)
+                .foregroundStyle(Tokens.Colors.muted)
+            NumeralRow(text: total, token: .total, color: Tokens.Colors.ink)
         }
         .padding(Tokens.Spacing.space4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tokens.Colors.ink, in: RoundedRectangle(cornerRadius: Layout.summaryCardRadius, style: .continuous))
+        .background(Tokens.Colors.surface, in: RoundedRectangle(cornerRadius: Layout.summaryCardRadius, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Layout.summaryCardRadius, style: .continuous).strokeBorder(Tokens.Colors.hairline, lineWidth: 1))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(caption). Total \(Numeral.spoken(total))")
     }
@@ -145,12 +146,7 @@ struct WorkoutPickerSheet: View {
             }
             .padding(.horizontal, Layout.margin)
             .padding(.top, 28)
-        }
-        .safeAreaInset(edge: .bottom) {
-            Button("Done") { dismiss() }
-                .buttonStyle(.primary)
-                .padding(.horizontal, Layout.margin)
-                .padding(.bottom, Tokens.Spacing.space3)
+            .padding(.bottom, Tokens.Spacing.space5)
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
