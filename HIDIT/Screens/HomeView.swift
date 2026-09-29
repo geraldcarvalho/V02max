@@ -62,7 +62,7 @@ struct HomeView: View {
             .padding(.top, 24)
 
             SummaryCard(
-                caption: "\(settings.selectedPreset.name), \(intervals.count) steps of intervals",
+                caption: settings.selectedPreset == .hidit ? "HIDIT, \(intervals.count) steps, repeats until you stop" : "\(settings.selectedPreset.name), \(intervals.count) steps of intervals",
                 total: TimeFormat.clock(intervals.totalSeconds)
             )
             .padding(.top, Tokens.Spacing.space3)

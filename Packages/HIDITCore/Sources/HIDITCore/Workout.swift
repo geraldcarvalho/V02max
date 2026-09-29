@@ -125,7 +125,7 @@ public enum Preset: String, CaseIterable, Identifiable, Sendable, Codable {
 
     public var detail: String {
         switch self {
-        case .hidit: return "Decreasing intervals, 3:2 ratio"
+        case .hidit: return "Repeats until you stop, 3:2 ratio"
         case .norwegian4x4: return "4 steps, 4:00 work, 3:00 recover"
         case .thirtyThirty: return "10 steps, 30 s work, 30 s recover"
         case .tabata: return "8 steps, 20 s work, 10 s recover"

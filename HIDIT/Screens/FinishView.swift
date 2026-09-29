@@ -15,7 +15,7 @@ struct FinishView: View {
                 .padding(.top, 96)
                 .accessibilityAddTraits(.isHeader)
             LazyVGrid(columns: [GridItem(.flexible(), alignment: .topLeading), GridItem(.flexible(), alignment: .topLeading)], alignment: .leading, spacing: 28) {
-                stat("Steps completed", "\(s?.stepsCompleted ?? 0)/\(s?.totalSteps ?? 0)", Tokens.Colors.muted)
+                stat("Steps completed", s?.totalSteps.map { "\(s?.stepsCompleted ?? 0)/\($0)" } ?? "\(s?.stepsCompleted ?? 0)", Tokens.Colors.muted)
                 stat("Longest work", TimeFormat.clock(s?.longestWork ?? 0), Tokens.Colors.muted)
                 stat("Work time", TimeFormat.clock(s?.workSeconds ?? 0), Tokens.Colors.work)
                 stat("Recover time", TimeFormat.clock(s?.recoverSeconds ?? 0), Tokens.Colors.recover)

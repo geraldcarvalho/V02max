@@ -71,4 +71,40 @@ final class ScheduleTests: XCTestCase {
         XCTAssertEqual(cues.between(0, 30).map(\.cue), [.recoverStart(step: 1)])
         XCTAssertEqual(cues.between(0, 30, includeLower: true).count, 2)
     }
+
+    func testHIDITRepeatsTheLadder() {
+        let ladder = HIDITConfig.default.intervals
+        let s = Schedule(intervals: ladder, countdown: 10, rounds: 3)
+        XCTAssertEqual(s.phases.count, 1 + 3 * 10)
+        XCTAssertEqual(s.totalDuration, 10 + 3 * 725)
+        // The last recover of round 1 (0:20) leads straight into round 2's 3:00 run.
+        let end1 = s.phases[10]
+        XCTAssertEqual(end1.kind, .recover)
+        XCTAssertEqual(end1.round, 1)
+        XCTAssertEqual(end1.duration, 20)
+        XCTAssertEqual(end1.next, Phase.Next(kind: .work, duration: 180))
+        XCTAssertEqual(s.phases[11].round, 2)
+        XCTAssertEqual(s.phases[11].step, 1)
+        XCTAssertEqual(s.phases[11].start, 10 + 725)
+        XCTAssertEqual(s.phases.last?.totalRounds, 3)
+    }
+
+    func testStatsToAMomentInRoundTwo() {
+        let s = Schedule(intervals: HIDITConfig.default.intervals, countdown: 10, rounds: 3)
+        // Countdown, a full round, then 35 s into round 2's first run.
+        let stats = s.stats(at: 10 + 725 + 35)
+        XCTAssertEqual(stats.steps, 5)
+        XCTAssertEqual(stats.workSeconds, 435 + 35)
+        XCTAssertEqual(stats.recoverSeconds, 290)
+        XCTAssertEqual(stats.longestWork, 180)
+        XCTAssertEqual(stats.totalSeconds, 760)
+        XCTAssertEqual(s.stats(at: 5), RunStats(steps: 0, workSeconds: 0, recoverSeconds: 0, longestWork: 0)) // still counting down
+    }
+
+    func testStatsCountsOnlyCompletedRecovers() {
+        let s = Schedule(intervals: [Interval(work: 30, recover: 20)], countdown: 0)
+        XCTAssertEqual(s.stats(at: 45).steps, 0)
+        XCTAssertEqual(s.stats(at: 45).recoverSeconds, 15)
+        XCTAssertEqual(s.stats(at: 50).steps, 1)
+    }
 }

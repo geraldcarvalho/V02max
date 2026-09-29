@@ -273,7 +273,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
   var cfg = Object.assign({ hidit: { works: HIDIT_DEFAULT.slice() }, custom: { work: 45, rec: 30, steps: 6 } }, store.get('cfg2', {}));
   if (!cfg.hidit || !Array.isArray(cfg.hidit.works)) cfg.hidit = { works: HIDIT_DEFAULT.slice() };
   var PRESETS = [
-    { id: 'hidit', name: 'HIDIT', sub: 'Decreasing intervals, 3:2 ratio', editable: true, glyph: true },
+    { id: 'hidit', name: 'HIDIT', sub: 'Repeats until you stop, 3:2 ratio', editable: true, glyph: true },
     { id: 'n4x4', name: 'Norwegian 4x4', sub: '4 steps, 4:00 work, 3:00 recover', fixed: [4, 240, 180] },
     { id: 's3030', name: '30/30', sub: '10 steps, 30 s work, 30 s recover', fixed: [10, 30, 30] },
     { id: 'tabata', name: 'Tabata', sub: '8 steps, 20 s work, 10 s recover', fixed: [8, 20, 10] },
@@ -323,7 +323,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
     wrapC.appendChild(open);
     box.appendChild(wrapC);
     var st = stepsFor(sel);
-    $('summary').textContent = cur.name + ', ' + st.length + ' steps of intervals';
+    $('summary').textContent = cur.name + ', ' + st.length + ' steps' + (cur.id === 'hidit' ? ', repeats until you stop' : ' of intervals');
     $('sumTime').textContent = fmt(total(st));
   }
   function renderPicker() {
@@ -389,7 +389,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
     var st = stepsFor(editing), max = Math.max.apply(null, st.map(function (s) { return s.w; }));
     $('bars').innerHTML = st.map(function (s) { return '<div class="pair"><i class="w" style="height:' + Math.max(4, Math.round(s.w / max * 84)) + 'px"></i><i class="r" style="height:' + Math.max(4, Math.round(s.r / max * 84)) + 'px"></i></div>'; }).join('');
     $('nums').innerHTML = st.map(function (s, i) { return '<span>' + (i + 1) + '</span>'; }).join('');
-    $('bTotal').innerHTML = 'Total <span class="n">' + fmt(total(st)) + '</span>';
+    $('bTotal').innerHTML = (editing === 'hidit' ? 'One round ' : 'Total ') + '<span class="n">' + fmt(total(st)) + '</span>';
   }
   function openBuilder(id) { editing = id; sel = id; store.set('sel', sel); renderBuilder(); show('builder'); }
 
@@ -417,16 +417,26 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
 
   /* run engine: remaining seconds tracked from a monotonic clock, phases precomputed at start */
   var R = null, timerId = null, wake = null;
-  function buildPhases(steps) {
+  /* HIDIT repeats the ladder until the person stops ("volitional exhaustion"); rounds are appended on demand. */
+  function roundPhases(steps, round, loop, countdownFirst) {
+    var ph = [];
+    steps.forEach(function (st, i) {
+      var lastStep = i === steps.length - 1;
+      ph.push({ kind: 'work', dur: st.w, step: i + 1, round: round, next: st.r });
+      ph.push({ kind: 'recover', dur: st.r, step: i + 1, round: round, next: steps[i + 1] ? steps[i + 1].w : (loop ? steps[0].w : 0) });
+    });
+    return ph;
+  }
+  function buildPhases(steps, loop) {
     var ph = [];
     if (settings.cd > 0) ph.push({ kind: 'ready', dur: settings.cd });
-    steps.forEach(function (s, i) { ph.push({ kind: 'work', dur: s.w, step: i + 1, next: s.r }); ph.push({ kind: 'recover', dur: s.r, step: i + 1, next: steps[i + 1] ? steps[i + 1].w : 0 }); });
-    return ph;
+    return ph.concat(roundPhases(steps, 1, loop));
   }
   function startRun() {
     ctx();
     var steps = stepsFor(sel); if (!steps.length) return;
-    R = { steps: steps, ph: buildPhases(steps), i: 0, rem: 0, last: performance.now(), paused: false, resume: 0, lastSec: -1, name: preset(sel).name, done: false };
+    var loop = sel === 'hidit';
+    R = { steps: steps, loop: loop, rounds: 1, ph: buildPhases(steps, loop), i: 0, rem: 0, last: performance.now(), paused: false, resume: 0, lastSec: -1, name: preset(sel).name, done: false };
     R.rem = R.ph[0].dur;
     try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { wake = l; }, function () {}); } catch (e) {}
     enterPhase(true);
@@ -440,7 +450,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
     if (p.kind === 'work') { cue.run(); say('Run. Step ' + p.step); } else { cue.recover(); say('Recover'); }
     $('runName').textContent = R.name;
     $('runPhase').textContent = p.kind === 'work' ? 'Run hard' : 'Recover';
-    $('runStep').textContent = 'Step ' + p.step + ' of ' + R.steps.length;
+    $('runStep').textContent = (R.loop ? 'Round ' + p.round + ' · ' : '') + 'Step ' + p.step + ' of ' + R.steps.length;
     $('nextTxt').textContent = p.kind === 'work' ? 'Next: recover ' + fmt(p.next) : (p.next ? 'Next: run hard ' + fmt(p.next) : 'Next: finish');
     $('ofTxt').textContent = 'of ' + fmt(p.dur);
     show('run'); renderRun();
@@ -469,19 +479,42 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
       else if (settings.ticks && p.dur > 20 && sec <= 3) { if (p.kind === 'work') cue.tickRise(); else cue.tickFlat(); }
     }
     while (R && R.rem <= 0) {
-      if (R.i + 1 >= R.ph.length) { finishRun(); return; }
+      if (R.i + 1 >= R.ph.length) {
+        if (R.loop) { R.rounds++; R.ph = R.ph.concat(roundPhases(R.steps, R.rounds, true)); }
+        else { finishRun(); return; }
+      }
       var over = -R.rem; R.i++; R.rem = R.ph[R.i].dur - over; enterPhase(false);
     }
     if (R) { if (R.ph[R.i].kind === 'ready') renderReady(); else renderRun(); }
   }
-  function finishRun() {
-    stopTimer(); cue.finish(); say('Finished');
-    var w = 0, r = 0; R.steps.forEach(function (s) { w += s.w; r += s.r; });
-    $('fTotal').textContent = fmt(w + r); $('fTotal').classList.toggle('long', fmt(w + r).length > 4); $('fTotal2').textContent = fmt(Math.max.apply(null, R.steps.map(function (x) { return x.w; }))); $('fSteps').textContent = R.steps.length + '/' + R.steps.length;
-    $('fWork').textContent = fmt(w); $('fRec').textContent = fmt(r);
+  function runStats() {
+    var w = 0, r = 0, steps = 0, longest = 0;
+    for (var j = 0; j <= R.i && j < R.ph.length; j++) {
+      var p = R.ph[j]; if (p.kind === 'ready') continue;
+      var dur = j < R.i ? p.dur : Math.min(p.dur, Math.max(0, p.dur - R.rem));
+      if (p.kind === 'work') { w += dur; longest = Math.max(longest, dur); }
+      else { r += dur; if (j < R.i || R.rem <= 0) steps++; }
+    }
+    return { w: w, r: r, steps: steps, longest: longest };
+  }
+  function showFinish() {
+    var st = runStats(), total = st.w + st.r;
+    $('fTotal').textContent = fmt(total); $('fTotal').classList.toggle('long', fmt(total).length > 4);
+    $('fTotal2').textContent = fmt(st.longest);
+    $('fSteps').textContent = R.loop ? String(st.steps) : st.steps + '/' + R.steps.length;
+    $('fWork').textContent = fmt(st.w); $('fRec').textContent = fmt(st.r);
     R = null; show('finish');
   }
-  function endRun() { stopTimer(); R = null; try { speechSynthesis.cancel(); } catch (e) {} renderHome(); show('home'); }
+  function finishRun() {
+    stopTimer(); cue.finish(); say('Finished');
+    R.rem = 0; showFinish();
+  }
+  function endRun() {
+    stopTimer(); try { speechSynthesis.cancel(); } catch (e) {}
+    // Ending after an interval has started shows what was done; ending in the countdown goes home.
+    if (R && R.ph[R.i] && R.ph[R.i].kind !== 'ready') { cue.finish(); showFinish(); return; }
+    R = null; renderHome(); show('home');
+  }
 
   /* settings */
   function renderSettings() {

@@ -29,11 +29,11 @@ struct BuilderView: View {
                     HStack(alignment: .firstTextBaseline) {
                         Text("Preview").typeStyle(.smallSemibold).foregroundStyle(Tokens.Colors.ink)
                         Spacer()
-                        Text("Total").labelStyle()
+                        Text(isHIDIT ? "One round" : "Total").labelStyle()
                         Numeral(TimeFormat.clock(intervals.totalSeconds), token: .value)
                     }
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Total \(Numeral.spoken(TimeFormat.clock(intervals.totalSeconds)))")
+                    .accessibilityLabel("\(isHIDIT ? "One round" : "Total") \(Numeral.spoken(TimeFormat.clock(intervals.totalSeconds)))")
                     LadderPreview(intervals: intervals)
                 }
                 .padding(EdgeInsets(top: 14, leading: 16, bottom: 12, trailing: 16))

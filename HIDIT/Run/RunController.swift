@@ -5,11 +5,22 @@ import HIDITCore
 struct RunSummary: Equatable {
     var workoutName: String
     var stepsCompleted: Int
-    var totalSteps: Int
+    /// Steps in one round; nil when the workout repeats until the person stops.
+    var totalSteps: Int?
     var totalSeconds: Int
     var longestWork: Int
     var workSeconds: Int
     var recoverSeconds: Int
+
+    init(workoutName: String, stats: RunStats, totalSteps: Int?) {
+        self.workoutName = workoutName
+        self.stepsCompleted = stats.steps
+        self.totalSteps = totalSteps
+        self.totalSeconds = stats.totalSeconds
+        self.longestWork = stats.longestWork
+        self.workSeconds = stats.workSeconds
+        self.recoverSeconds = stats.recoverSeconds
+    }
 }
 
 /// Drives a run: owns the session, reads the monotonic clock, and routes cues to sound, haptics,
@@ -74,7 +85,9 @@ final class RunController: ObservableObject {
         guard let settings else { return }
         let intervals = settings.intervals
         guard !intervals.isEmpty else { return }
-        let schedule = Schedule(intervals: intervals, countdown: settings.countdownLength)
+        // HIDIT repeats its ladder until the person stops; the other workouts run once.
+        let repeats = settings.selectedPreset == .hidit
+        let schedule = Schedule(intervals: intervals, countdown: settings.countdownLength, rounds: repeats ? Schedule.repeatingRounds : 1)
         session = RunSession(schedule: schedule, options: CueOptions(ticks: settings.countdownTicks), startedAt: now())
         workoutName = settings.selectedPreset.name
         summary = nil
@@ -133,7 +146,20 @@ final class RunController: ObservableObject {
         tick()
     }
 
-    /// Ends the run early, or cancels it from the countdown.
+    /// Ends the run after an interval has started and shows what was done; in the countdown it just cancels.
+    func endEarly() {
+        guard let s = session else { return }
+        let t = s.scheduleTime(at: now())
+        let stats = s.schedule.stats(at: t)
+        guard stats.workSeconds > 0 else {
+            stop()
+            return
+        }
+        audio.playNow(.finish, boost: settings?.volumeBoost ?? false)
+        finishWith(stats, of: s)
+    }
+
+    /// Cancels the run without a summary.
     func stop() {
         stopTimer()
         session = nil
@@ -226,17 +252,13 @@ final class RunController: ObservableObject {
     }
 
     private func complete(_ s: RunSession) {
+        finishWith(s.schedule.stats(at: s.schedule.totalDuration), of: s)
+    }
+
+    private func finishWith(_ stats: RunStats, of s: RunSession) {
         stopTimer()
-        let intervals = s.schedule.intervals
-        summary = RunSummary(
-            workoutName: workoutName,
-            stepsCompleted: intervals.count,
-            totalSteps: intervals.count,
-            totalSeconds: intervals.totalSeconds,
-            longestWork: intervals.longestWork,
-            workSeconds: intervals.workSeconds,
-            recoverSeconds: intervals.recoverSeconds
-        )
+        let repeats = s.schedule.rounds > 1
+        summary = RunSummary(workoutName: workoutName, stats: stats, totalSteps: repeats ? nil : s.schedule.intervals.count)
         activity.end()
         notifications.cancel()
         UIApplication.shared.isIdleTimerDisabled = false

@@ -23,7 +23,7 @@ struct RunView: View {
                 Text(run.workoutName).labelStyle()
                 Spacer()
                 if let phase, let step = phase.step {
-                    Text("Step \(step) of \(phase.totalSteps)").labelStyle()
+                    Text((phase.totalRounds > 1 ? "Round \(phase.round) · " : "") + "Step \(step) of \(phase.totalSteps)").labelStyle()
                 }
             }
 
@@ -74,7 +74,7 @@ struct RunView: View {
             }
             .buttonStyle(.primary)
             if paused {
-                Button("End run") { run.stop() }.buttonStyle(.secondary)
+                Button("End run") { run.endEarly() }.buttonStyle(.secondary)
             }
         }
         .overlay(Color.white.opacity(flash).ignoresSafeArea().allowsHitTesting(false))

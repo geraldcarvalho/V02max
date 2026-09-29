@@ -38,10 +38,10 @@ On the run screen the background takes a 12 percent tint of the phase color (red
 1. **Home:** light greeting on the left, bold weekday with a small date on the right, a taupe settings button. Flat preset list with dashed dividers: HIDIT on top with a small ladder glyph of shrinking bars, then Norwegian 4x4, 30/30, Tabata, Custom. HIDIT and Custom open an editor. Below the list, a black card repeats the selected session's total time as a big numeral with a diagonal arrow. Start button (charcoal pill) at the bottom.
 2. **HIDIT builder:** taupe back button. A Steps stepper adds or removes the last step (2 to 10). Each step has its own work stepper (5 second increments, 0:10 to 10:00) and shows its recovery, which is read-only and always work x 2/3. A preview card shows paired work and recover bars per step, separated by dashed guides, with step numbers and the total time as a big numeral.
 3. **Get ready:** 10-second countdown as a very large numeral at the bottom left with a diagonal arrow, "First: run hard 3:00", Skip and Cancel.
-4. **Run, work:** red phase. Up-right arrow, percent of the phase, a thin progress line with an end dot filling forward, "Run hard", giant timer, "Step 2 of 5", "Next: recover 1:40", full-width Pause.
+4. **Run, work:** red phase. Up-right arrow, percent of the phase, a thin progress line with an end dot filling forward, "Run hard", giant timer, "Step 2 of 5" (HIDIT: "Round 1 · Step 2 of 5"), "Next: recover 1:40", full-width Pause.
 5. **Run, recover:** same layout in graphite. Down-right arrow, the line draining backward, "Next: run hard 2:00". Pause becomes Resume where paused.
-6. **Paused:** dimmed timer with Resume and an outlined End run.
-7. **Finish:** total time as a big numeral, a two-column grid of big-numeral stats (steps completed, longest work, work time, recover time), Done.
+6. **Paused:** dimmed timer with Resume and an outlined End run. End run opens Finish with the totals so far.
+7. **Finish:** total time as a big numeral, a two-column grid of big-numeral stats (steps completed, longest work, work time, recover time), Done. It shows what was actually done, because HIDIT ends when the person ends the run.
 8. **First launch:** one-line health note ("Check with a doctor before high-intensity training") and a Got it button.
 9. **Settings sheet:** frosted sheet with sound (on, off, voice only), haptics, volume boost, countdown ticks, countdown length, and test-cue buttons for run, recover and finish.
 
@@ -57,7 +57,7 @@ HIDIT is a fixed ladder of work intervals that gets shorter each step. Recovery 
 | 4 | 0:45 | 0:30 |
 | 5 (the loop) | 0:30 | 0:20 |
 
-The intervals total 12:05 (7:15 of work, 4:50 of recovery), plus warm-up and cooldown outside the app. The work times do not follow one repeated step-down, so the builder edits each step's work directly. Fixed presets remain available. The full schedule is precomputed at start.
+The intervals total 12:05 (7:15 of work, 4:50 of recovery), plus warm-up and cooldown outside the app. HIDIT repeats the ladder, starting again at 3:00, until the person ends the run (volitional exhaustion), as in the published protocol. The 3:2 ratio is kept as published: recovery is not shortened, and there is no step-down setting. The work times do not follow one repeated step-down, so the builder edits each step's work directly. Fixed presets remain available. The full schedule is precomputed at start.
 
 ## Cue system: run versus recover
 
@@ -118,4 +118,4 @@ All screens in light mode, the HIDIT builder in default and edited states, run s
 - Light mode only. Dark mode is out of scope.
 - Phase colors are red (work) and graphite (recover), replacing green and blue. The clay accent is dropped; the main action is a charcoal pill.
 - Michroma and Hanken Grotesk replace SF Pro and Roboto Flex. Numbers are shown as big numerals throughout.
-- Home gains a black summary card. Run screens add a direction arrow and a percent.
+- Home gains a black summary card. Run screens add a direction arrow and a percent. HIDIT is the published ladder (3:00, 2:00, 1:00, 0:45, 0:30 with recovery at 2/3) and repeats until the person ends the run. A trainer said recovery felt long; the 3:2 ratio stays because it is the published protocol.
