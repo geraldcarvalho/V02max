@@ -55,17 +55,6 @@ struct HomeView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("\(settings.selectedPreset.name), \(settings.selectedPreset.detail). Change workout")
-                        if let edit = editAction(for: settings.selectedPreset) {
-                            Button(action: edit) {
-                                AxisIcon.chevron.image
-                                    .frame(width: 18, height: 18)
-                                    .foregroundStyle(Tokens.Colors.muted)
-                                    .frame(width: Layout.iconButton, height: Layout.iconButton)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Edit \(settings.selectedPreset.name)")
-                        }
                     }
                     DashedLine()
                 }
@@ -88,11 +77,6 @@ struct HomeView: View {
                 onEdit(preset)
             })
         }
-    }
-
-    private func editAction(for preset: Preset) -> (() -> Void)? {
-        guard preset.isEditable else { return nil }
-        return { onEdit(preset) }
     }
 }
 
