@@ -156,7 +156,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
 <div class="day"><strong id="dayName">Today</strong><span class="label" id="dayDate"></span></div>
 </div>
 <button class="iconbtn" id="openSettings" aria-label="Settings" style="margin-top:20px"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
-<div class="list" id="presets" role="radiogroup" aria-label="Workout"></div>
+<div class="list"><div class="label" style="margin-bottom:4px">Workout</div><div id="current"></div></div>
 <div class="dark"><span class="label" id="summary"></span><div class="bottomrow" style="margin-top:12px"><div class="timer long" id="sumTime">0:00</div><svg class="arrow" viewBox="0 0 56 56" aria-hidden="true"><path d="M14 14 L42 42 M42 22 V42 H22"/></svg></div></div>
 <div class="spacer"></div>
 <button class="primary" id="start">Start</button>
@@ -235,6 +235,15 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
 <button class="primary" id="gotit">Got it</button>
 </section>
 
+<div class="sheet" id="picker" hidden>
+<div class="panel" role="dialog" aria-modal="true" aria-label="Choose a workout">
+<div class="grab"></div>
+<h2>Workouts</h2>
+<div id="presets" role="radiogroup" aria-label="Workout"></div>
+<button class="primary" id="closePicker" style="margin-top:24px">Done</button>
+</div>
+</div>
+
 <div class="sheet" id="settings" hidden>
 <div class="panel" role="dialog" aria-modal="true" aria-label="Settings">
 <div class="grab"></div>
@@ -307,31 +316,47 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
   }
 
   /* home */
+  function glyphHtml(p) { return '<span class="glyph">' + (p.glyph ? '<i style="height:26px"></i><i style="height:20px"></i><i style="height:14px"></i><i style="height:8px"></i>' : '') + '</span>'; }
   function renderHome() {
     var d = new Date();
     $('dayName').textContent = d.toLocaleDateString(undefined, { weekday: 'long' });
     $('dayDate').textContent = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
-    $('selName').textContent = preset(sel).name;
+    var cur = preset(sel);
+    $('selName').textContent = cur.name;
+    var box = $('current'); box.innerHTML = '';
+    var wrapC = document.createElement('div'); wrapC.style.cssText = 'display:flex;align-items:center;border-top:1px dashed var(--dash);border-bottom:1px dashed var(--dash)';
+    var open = document.createElement('button'); open.className = 'row'; open.style.border = '0'; open.setAttribute('aria-haspopup', 'dialog'); open.setAttribute('aria-label', cur.name + ', ' + cur.sub + '. Change workout');
+    open.innerHTML = glyphHtml(cur) + '<span class="txt"><span class="name">' + cur.name + '</span><span class="sub">' + cur.sub + '</span></span><svg class="check" style="visibility:visible" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+    open.addEventListener('click', function () { renderPicker(); $('picker').hidden = false; });
+    wrapC.appendChild(open);
+    if (cur.editable) {
+      var ed = document.createElement('button'); ed.className = 'edit'; ed.setAttribute('aria-label', 'Edit ' + cur.name);
+      ed.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
+      ed.addEventListener('click', function () { openBuilder(cur.id); });
+      wrapC.appendChild(ed);
+    }
+    box.appendChild(wrapC);
+    var st = stepsFor(sel);
+    $('summary').textContent = cur.name + ', ' + st.length + ' steps of intervals';
+    $('sumTime').textContent = fmt(total(st));
+  }
+  function renderPicker() {
     var list = $('presets'); list.innerHTML = '';
     PRESETS.forEach(function (p) {
       var wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;align-items:center;border-top:1px dashed var(--dash)';
       var b = document.createElement('button'); b.className = 'row'; b.style.border = '0'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(sel === p.id));
-      var g = '<span class="glyph">' + (p.glyph ? '<i style="height:26px"></i><i style="height:20px"></i><i style="height:14px"></i><i style="height:8px"></i>' : '') + '</span>';
-      b.innerHTML = g + '<span class="txt"><span class="name">' + p.name + '</span><span class="sub">' + p.sub + '</span></span><svg class="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-      b.addEventListener('click', function () { sel = p.id; store.set('sel', sel); renderHome(); });
+      b.innerHTML = glyphHtml(p) + '<span class="txt"><span class="name">' + p.name + '</span><span class="sub">' + p.sub + '</span></span><svg class="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+      b.addEventListener('click', function () { sel = p.id; store.set('sel', sel); renderHome(); $('picker').hidden = true; });
       wrap.appendChild(b);
       if (p.editable) {
         var e = document.createElement('button'); e.className = 'edit'; e.setAttribute('aria-label', 'Edit ' + p.name);
         e.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
-        e.addEventListener('click', function () { openBuilder(p.id); });
+        e.addEventListener('click', function () { $('picker').hidden = true; openBuilder(p.id); });
         wrap.appendChild(e);
       }
       list.appendChild(wrap);
     });
     list.firstChild.style.borderTop = '0';
-    var st = stepsFor(sel);
-    $('summary').textContent = preset(sel).name + ', ' + st.length + ' steps of intervals';
-    $('sumTime').textContent = fmt(total(st));
   }
 
   /* builder */
@@ -507,6 +532,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
   $('gotit').addEventListener('click', function () { store.set('seenHealth', true); renderHome(); show('home'); });
   $('openSettings').addEventListener('click', function () { renderSettings(); $('settings').hidden = false; });
   $('closeSettings').addEventListener('click', function () { $('settings').hidden = true; });
+  $('closePicker').addEventListener('click', function () { $('picker').hidden = true; });
+  $('picker').addEventListener('click', function (e) { if (e.target === $('picker')) $('picker').hidden = true; });
   $('settings').addEventListener('click', function (e) { if (e.target === $('settings')) $('settings').hidden = true; });
   Array.prototype.forEach.call(document.querySelectorAll('[data-tog]'), function (b) {
     b.addEventListener('click', function () { settings[b.dataset.tog] = !settings[b.dataset.tog]; saveSettings(); });
