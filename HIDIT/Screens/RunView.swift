@@ -28,17 +28,20 @@ struct RunView: View {
             }
 
             Spacer(minLength: 0)
-            VStack(spacing: 14) {
-                DiagonalArrow(direction: kind == .recover ? .downRight : .upRight, color: color)
-                    .padding(.bottom, 6)
-                Numeral("\(Int(((snap?.progress ?? 0) * 100).rounded()))%", token: .percent, color: color)
-                ProgressLine(progress: snap?.progress ?? 0, color: color)
-                    .frame(maxWidth: 260)
-                Text(label)
-                    .typeStyle(.phase, uppercase: true)
-                    .foregroundStyle(paused ? Tokens.Colors.muted : color)
-                    .accessibilityAddTraits(.updatesFrequently)
+            ZStack {
+                ProgressRing(progress: snap?.progress ?? 0, color: color)
+                VStack(spacing: 12) {
+                    DiagonalArrow(direction: kind == .recover ? .downRight : .upRight, color: color)
+                        .scaleEffect(40 / Layout.arrowSize)
+                        .frame(width: 40, height: 40)
+                    Numeral("\(Int(((snap?.progress ?? 0) * 100).rounded()))%", token: .percent.sized(34), color: color)
+                    Text(label)
+                        .typeStyle(.phase, uppercase: true)
+                        .foregroundStyle(paused ? Tokens.Colors.muted : color)
+                        .accessibilityAddTraits(.updatesFrequently)
+                }
             }
+            .frame(maxWidth: 280, maxHeight: 280)
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
             Spacer(minLength: 0)

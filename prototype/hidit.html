@@ -92,6 +92,13 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
 #run .phase, #run .timer { color: var(--pc); }
 #run[data-paused="1"] .phase { color: var(--muted); }
 #run[data-paused="1"] .timer { opacity: .4; }
+.ring { position: relative; width: min(280px, 72vw); aspect-ratio: 1; max-width: 100%; }
+.ringsvg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ringsvg .rbase { fill: none; stroke: var(--dash); stroke-width: 1; stroke-dasharray: 2 4; }
+.ringsvg .rfill { fill: none; stroke: var(--pc); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 816.8; stroke-dashoffset: 816.8; }
+.ringsvg .rdot { fill: var(--pc); }
+.ringin { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.arrow.small { width: 40px; height: 40px; }
 .track { position: relative; height: 12px; display: flex; align-items: center; }
 .track .base { width: 100%; height: 1px; background: var(--dash); }
 .track .fill { position: absolute; left: 0; height: 2px; background: var(--pc); }
@@ -189,10 +196,18 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
 <section id="run" hidden data-phase="work">
 <div style="display:flex;justify-content:space-between"><span class="label" id="runName">HIDIT</span><span class="label" id="runStep"></span></div>
 <div class="center">
-<svg class="arrow" viewBox="0 0 56 56" style="color:var(--pc);margin-bottom:20px" aria-hidden="true"><path id="arrowPath" d="M14 42 L42 14 M22 14 H42 V34"/></svg>
-<div class="label" id="pct" style="font-family:var(--display);font-size:26px;color:var(--pc)">0%</div>
-<div class="track" style="width:70%;margin-top:14px"><div class="base"></div><div class="fill" id="fill"></div><div class="dot" id="dot"></div></div>
-<div class="phase" id="runPhase" style="margin-top:14px">Run hard</div>
+<div class="ring">
+<svg class="ringsvg" viewBox="0 0 280 280" aria-hidden="true">
+<circle class="rbase" cx="140" cy="140" r="130"/>
+<circle class="rfill" id="rfill" cx="140" cy="140" r="130" transform="rotate(-90 140 140)"/>
+<circle class="rdot" id="rdot" cx="140" cy="10" r="6"/>
+</svg>
+<div class="ringin">
+<svg class="arrow small" viewBox="0 0 56 56" style="color:var(--pc)" aria-hidden="true"><path id="arrowPath" d="M14 42 L42 14 M22 14 H42 V34"/></svg>
+<div id="pct" style="font-family:var(--display);font-size:34px;letter-spacing:-.01em;color:var(--pc);margin-top:10px">0%</div>
+<div class="phase" id="runPhase" style="margin-top:12px">Run hard</div>
+</div>
+</div>
 </div>
 <div class="bottomrow"><div class="timer" id="runTimer" role="timer">0:00</div></div>
 <div class="nextrow label" style="margin-top:16px"><b id="nextTxt"></b><span id="ofTxt"></span></div>
@@ -442,7 +457,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
     $('runPhase').textContent = R.paused ? 'Paused' : (R.resume > 0 ? 'Ready' : (p.kind === 'work' ? 'Run hard' : 'Recover'));
     var frac = p.kind === 'work' ? 1 - R.rem / p.dur : R.rem / p.dur; frac = Math.min(1, Math.max(0, frac));
     $('pct').textContent = Math.round(frac * 100) + '%'; $('arrowPath').setAttribute('d', p.kind === 'work' ? 'M14 42 L42 14 M22 14 H42 V34' : 'M14 14 L42 42 M42 22 V42 H22');
-    $('fill').style.width = (frac * 100) + '%'; $('dot').style.left = (frac * 100) + '%';
+    var C = 2 * Math.PI * 130, ang = frac * 2 * Math.PI; $('rfill').style.strokeDashoffset = String(C * (1 - frac)); $('rdot').setAttribute('cx', String(140 + 130 * Math.sin(ang))); $('rdot').setAttribute('cy', String(140 - 130 * Math.cos(ang)));
     $('run').dataset.paused = R.paused ? '1' : '0';
     $('pause').textContent = R.paused ? 'Resume' : 'Pause'; $('endRun').hidden = !R.paused;
   }

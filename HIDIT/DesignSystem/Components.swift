@@ -326,3 +326,35 @@ struct CalmBackground: View {
             .offset(x: x, y: y)
     }
 }
+
+/// Thin progress ring with an end dot, starting at 12 o'clock. Work fills clockwise; recover drains back.
+struct ProgressRing: View {
+    let progress: Double
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            let d = min(geo.size.width, geo.size.height)
+            let r = d / 2 - 6
+            let p = min(1, max(0, progress))
+            let angle = p * 2 * .pi
+            ZStack {
+                Circle()
+                    .stroke(Tokens.Colors.dash, style: StrokeStyle(lineWidth: 1, dash: [2, 4]))
+                    .frame(width: r * 2, height: r * 2)
+                Circle()
+                    .trim(from: 0, to: p)
+                    .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: r * 2, height: r * 2)
+                Circle()
+                    .fill(color)
+                    .frame(width: 12, height: 12)
+                    .offset(x: r * sin(angle), y: -r * cos(angle))
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .accessibilityHidden(true)
+    }
+}
