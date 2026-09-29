@@ -11,52 +11,25 @@ public struct Interval: Equatable, Hashable, Sendable, Codable {
     }
 }
 
-/// How much work shrinks from one HIDIT step to the next.
-public enum StepDown: Equatable, Hashable, Sendable, Codable {
-    case seconds(Int)
-    case percent(Int)
-
-    public var value: Int {
-        switch self {
-        case .seconds(let v), .percent(let v): return v
-        }
-    }
-
-    public var isPercent: Bool {
-        if case .percent = self { return true }
-        return false
-    }
-}
-
-/// The result of building a HIDIT ladder.
-public struct Ladder: Equatable, Sendable {
-    public var intervals: [Interval]
-    /// True when the ladder stopped before the requested number of steps because work would drop under the minimum.
-    public var clipped: Bool
-}
-
-/// HIDIT: work and recovery shrink each step while recovery stays at exactly work x 2/3.
+/// HIDIT: a fixed ladder of work intervals that gets shorter each step. Recovery is always work x 2/3.
+///
+/// The default ladder is 3:00, 2:00, 1:00, 0:45 and 0:30 of work with recovery 2:00, 1:20, 0:40, 0:30
+/// and 0:20 (12:05 in total). The last step is the loop.
 public struct HIDITConfig: Equatable, Hashable, Sendable, Codable {
-    public static let minimumWork = 10
-    public static let startWorkRange = 60...600
-    public static let startWorkStep = 15
+    public static let workRange = 10...600
+    public static let workIncrement = 5
     public static let stepsRange = 2...10
-    public static let secondsStepDownRange = 5...60
-    public static let percentStepDownRange = 5...40
-    public static let stepDownIncrement = 5
-    public static let defaultSecondsStepDown = 30
-    public static let defaultPercentStepDown = 15
+    public static let defaultWorks = [180, 120, 60, 45, 30]
+    /// Shrink applied to the last step's work when a new step is added.
+    public static let addedStepDrop = 15
 
-    public var startWork: Int
-    public var steps: Int
-    public var stepDown: StepDown
+    /// Work seconds for each step, in order.
+    public var works: [Int]
 
-    public static let `default` = HIDITConfig(startWork: 180, steps: 5, stepDown: .seconds(30))
+    public static let `default` = HIDITConfig(works: defaultWorks)
 
-    public init(startWork: Int, steps: Int, stepDown: StepDown) {
-        self.startWork = startWork
-        self.steps = steps
-        self.stepDown = stepDown
+    public init(works: [Int]) {
+        self.works = works
     }
 
     /// Recovery is always work x 2/3, rounded to the nearest second.
@@ -64,43 +37,37 @@ public struct HIDITConfig: Equatable, Hashable, Sendable, Codable {
         Int((Double(work) * 2.0 / 3.0).rounded())
     }
 
-    /// Recovery for the first step, shown read-only in the builder.
-    public var startRecovery: Int { Self.recovery(forWork: startWork) }
+    public var intervals: [Interval] {
+        works.map { Interval(work: $0, recover: Self.recovery(forWork: $0)) }
+    }
 
-    /// Returns a copy with every value inside its allowed range.
+    /// Returns a copy with the step count and every work time inside its allowed range.
     public func clamped() -> HIDITConfig {
+        var w = works.prefix(Self.stepsRange.upperBound).map { min(max($0, Self.workRange.lowerBound), Self.workRange.upperBound) }
+        while w.count < Self.stepsRange.lowerBound { w.append(max(Self.workRange.lowerBound, (w.last ?? 60) - Self.addedStepDrop)) }
+        return HIDITConfig(works: w)
+    }
+
+    public func addingStep() -> HIDITConfig {
+        guard works.count < Self.stepsRange.upperBound else { return self }
         var c = self
-        c.startWork = min(max(c.startWork, Self.startWorkRange.lowerBound), Self.startWorkRange.upperBound)
-        c.steps = min(max(c.steps, Self.stepsRange.lowerBound), Self.stepsRange.upperBound)
-        switch c.stepDown {
-        case .seconds(let v):
-            c.stepDown = .seconds(min(max(v, Self.secondsStepDownRange.lowerBound), Self.secondsStepDownRange.upperBound))
-        case .percent(let v):
-            c.stepDown = .percent(min(max(v, Self.percentStepDownRange.lowerBound), Self.percentStepDownRange.upperBound))
-        }
+        c.works.append(max(Self.workRange.lowerBound, (works.last ?? 60) - Self.addedStepDrop))
         return c
     }
 
-    /// Switches the step-down unit and resets it to that unit's default.
-    public func withStepDownUnit(percent: Bool) -> HIDITConfig {
+    public func removingLastStep() -> HIDITConfig {
+        guard works.count > Self.stepsRange.lowerBound else { return self }
         var c = self
-        c.stepDown = percent ? .percent(Self.defaultPercentStepDown) : .seconds(Self.defaultSecondsStepDown)
+        c.works.removeLast()
         return c
     }
 
-    public func ladder() -> Ladder {
-        var intervals: [Interval] = []
-        var work = Double(startWork)
-        for _ in 0..<steps {
-            let rounded = Int(work.rounded())
-            if rounded < Self.minimumWork { break }
-            intervals.append(Interval(work: rounded, recover: Self.recovery(forWork: rounded)))
-            switch stepDown {
-            case .seconds(let s): work -= Double(s)
-            case .percent(let p): work *= 1.0 - Double(p) / 100.0
-            }
-        }
-        return Ladder(intervals: intervals, clipped: intervals.count < steps)
+    /// Changes one step's work by `delta` seconds, kept in range.
+    public func adjustingWork(at index: Int, by delta: Int) -> HIDITConfig {
+        guard works.indices.contains(index) else { return self }
+        var c = self
+        c.works[index] = min(max(works[index] + delta, Self.workRange.lowerBound), Self.workRange.upperBound)
+        return c
     }
 }
 
@@ -170,7 +137,7 @@ public enum Preset: String, CaseIterable, Identifiable, Sendable, Codable {
 
     public func intervals(hidit: HIDITConfig, custom: CustomConfig) -> [Interval] {
         switch self {
-        case .hidit: return hidit.ladder().intervals
+        case .hidit: return hidit.intervals
         case .norwegian4x4: return Array(repeating: Interval(work: 240, recover: 180), count: 4)
         case .thirtyThirty: return Array(repeating: Interval(work: 30, recover: 30), count: 10)
         case .tabata: return Array(repeating: Interval(work: 20, recover: 10), count: 8)

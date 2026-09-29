@@ -170,7 +170,6 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
 <div class="bars" id="bars"></div>
 <div class="nums label" id="nums"></div>
 <div class="legend label"><span class="lw">Work</span><span class="lr">Recover</span></div>
-<div class="label warn" id="bWarn" hidden style="margin-top:8px"></div>
 </div>
 <div class="spacer" style="min-height:24px"></div>
 <button class="primary" id="bStart">Start</button>
@@ -270,7 +269,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
     set: function (k, v) { try { localStorage.setItem('hidit.' + k, JSON.stringify(v)); } catch (e) {} }
   };
   var settings = Object.assign({ sound: 'on', haptics: true, boost: false, ticks: true, cd: 10 }, store.get('settings', {}));
-  var cfg = Object.assign({ hidit: { start: 180, steps: 5, down: 30, unit: 's' }, custom: { work: 45, rec: 30, steps: 6 } }, store.get('cfg', {}));
+  var HIDIT_DEFAULT = [180, 120, 60, 45, 30];
+  var cfg = Object.assign({ hidit: { works: HIDIT_DEFAULT.slice() }, custom: { work: 45, rec: 30, steps: 6 } }, store.get('cfg2', {}));
+  if (!cfg.hidit || !Array.isArray(cfg.hidit.works)) cfg.hidit = { works: HIDIT_DEFAULT.slice() };
   var PRESETS = [
     { id: 'hidit', name: 'HIDIT', sub: 'Decreasing intervals, 3:2 ratio', editable: true, glyph: true },
     { id: 'n4x4', name: 'Norwegian 4x4', sub: '4 steps, 4:00 work, 3:00 recover', fixed: [4, 240, 180] },
@@ -286,14 +287,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
 
   /* schedule: every HIDIT step is work then recover at exactly 2/3 */
   function ladder() {
-    var h = cfg.hidit, out = [], w = h.start, clipped = false;
-    for (var i = 0; i < h.steps; i++) {
-      if (w < 10) { clipped = true; break; }
-      out.push({ w: Math.round(w), r: Math.round(w * 2 / 3) });
-      w = h.unit === 's' ? w - h.down : w * (1 - h.down / 100);
-    }
-    ladder.clipped = clipped || out.length < h.steps;
-    return out;
+    return cfg.hidit.works.map(function (w) { return { w: w, r: Math.round(w * 2 / 3) }; });
   }
   function stepsFor(id) {
     if (id === 'hidit') return ladder();
@@ -354,13 +348,16 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
   /* builder */
   function fieldRows() {
     if (editing === 'hidit') {
-      var h = cfg.hidit, st = ladder();
-      return [
-        { k: 'Start work', v: fmt(h.start), key: 'start', d: 15 },
-        { k: 'Steps', v: String(h.steps), key: 'steps', d: 1 },
-        { k: 'Step-down', v: h.unit === 's' ? h.down + ' s' : h.down + '%', key: 'down', d: h.unit === 's' ? 5 : 5, seg: true },
-        { k: 'Recovery', sm: 'Work x 2/3, set automatically', v: fmt(Math.round(h.start * 2 / 3)), ro: true }
-      ];
+      var ws = cfg.hidit.works;
+      var rows = [{ k: 'Steps', v: String(ws.length), onStep: function (d) {
+        if (d > 0 && ws.length < 10) ws.push(Math.max(10, ws[ws.length - 1] - 15));
+        if (d < 0 && ws.length > 2) ws.pop();
+      }, d: 1 }];
+      ws.forEach(function (w, i) {
+        rows.push({ k: 'Step ' + (i + 1), sm: 'Recover ' + fmt(Math.round(w * 2 / 3)), v: fmt(w), d: 5,
+          onStep: function (d) { ws[i] = Math.min(600, Math.max(10, w + d)); } });
+      });
+      return rows;
     }
     var c = cfg.custom;
     return [
@@ -370,9 +367,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
     ];
   }
   function clampCfg() {
-    var h = cfg.hidit, c = cfg.custom;
-    h.start = Math.min(600, Math.max(60, h.start)); h.steps = Math.min(10, Math.max(2, h.steps));
-    h.down = Math.min(h.unit === 's' ? 60 : 40, Math.max(5, h.down));
+    var c = cfg.custom;
     c.work = Math.min(600, Math.max(10, c.work)); c.rec = Math.min(600, Math.max(5, c.rec)); c.steps = Math.min(20, Math.max(1, c.steps));
   }
   function renderBuilder() {
@@ -386,26 +381,15 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round
       line.innerHTML = html;
       if (!r.ro) Array.prototype.forEach.call(line.querySelectorAll('.step'), function (b) {
         b.addEventListener('click', function () {
-          var o = editing === 'hidit' ? cfg.hidit : cfg.custom; o[r.key] += Number(b.dataset.d); clampCfg(); store.set('cfg', cfg); renderBuilder();
+          if (r.onStep) r.onStep(Number(b.dataset.d)); else cfg.custom[r.key] += Number(b.dataset.d); clampCfg(); store.set('cfg2', cfg); renderBuilder();
         });
       });
       box.appendChild(line);
-      if (r.seg) {
-        var s = document.createElement('div'); s.className = 'line segline';
-        s.innerHTML = '<div class="seg" style="flex:1"><button data-u="s">Seconds</button><button data-u="p">Percent</button></div>';
-        Array.prototype.forEach.call(s.querySelectorAll('button'), function (b) {
-          b.setAttribute('aria-pressed', String((b.dataset.u === 's') === (cfg.hidit.unit === 's')));
-          b.addEventListener('click', function () { cfg.hidit.unit = b.dataset.u === 's' ? 's' : 'p'; cfg.hidit.down = b.dataset.u === 's' ? 30 : 15; store.set('cfg', cfg); renderBuilder(); });
-        });
-        box.appendChild(s);
-      }
     });
     var st = stepsFor(editing), max = Math.max.apply(null, st.map(function (s) { return s.w; }));
     $('bars').innerHTML = st.map(function (s) { return '<div class="pair"><i class="w" style="height:' + Math.max(4, Math.round(s.w / max * 84)) + 'px"></i><i class="r" style="height:' + Math.max(4, Math.round(s.r / max * 84)) + 'px"></i></div>'; }).join('');
     $('nums').innerHTML = st.map(function (s, i) { return '<span>' + (i + 1) + '</span>'; }).join('');
     $('bTotal').innerHTML = 'Total <span class="n">' + fmt(total(st)) + '</span>';
-    var warn = editing === 'hidit' && ladder.clipped;
-    $('bWarn').hidden = !warn; if (warn) $('bWarn').textContent = 'Work would drop under 0:10, so the ladder stops at step ' + st.length;
   }
   function openBuilder(id) { editing = id; sel = id; store.set('sel', sel); renderBuilder(); show('builder'); }
 

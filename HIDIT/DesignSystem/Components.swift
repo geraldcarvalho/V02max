@@ -113,6 +113,7 @@ struct PresetRow: View {
 /// A labelled value with minus and plus buttons.
 struct StepperRow: View {
     let title: String
+    var caption: String? = nil
     let value: String
     let accessibilityValue: String
     let decrement: () -> Void
@@ -120,7 +121,10 @@ struct StepperRow: View {
 
     var body: some View {
         HStack(spacing: Tokens.Spacing.space2) {
-            Text(title).typeStyle(.bodyMedium).foregroundStyle(Tokens.Colors.ink)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).typeStyle(.bodyMedium).foregroundStyle(Tokens.Colors.ink)
+                if let caption { Text(caption).labelStyle() }
+            }
             Spacer(minLength: 0)
             StepButton(symbol: "minus", label: "Decrease \(title)", action: decrement)
             Numeral(value, token: .value)

@@ -54,7 +54,7 @@ final class AppSettings: ObservableObject {
         static let ticks = "countdownTicks"
         static let countdown = "countdownLength"
         static let preset = "selectedPreset"
-        static let hidit = "hiditConfig"
+        static let hidit = "hiditLadder"
         static let custom = "customConfig"
         static let health = "hasSeenHealthNote"
     }

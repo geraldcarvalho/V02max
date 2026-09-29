@@ -1,6 +1,6 @@
 # HIDIT interval timer: Claude Design brief
 
-> Source: [Claude Docs PRD](https://claude.ai/artifact/8ZAdn1RV6QvnJzDbWzmRWA), copied at rev 5 on 2026-09-29. The online doc is the source of truth; update this copy when it changes.
+> Source: [Claude Docs PRD](https://claude.ai/artifact/8ZAdn1RV6QvnJzDbWzmRWA), copied at rev 5 on 2026-09-29, with the HIDIT ladder corrected afterwards. The online doc is the source of truth; update this copy when it changes.
 
 A lightweight iOS and Android interval timer for VO2 max training. It runs HIDIT (High-Intensity Decreasing Interval Training, where work and recovery shrink each step while holding a strict 3:2 work-to-recovery ratio) plus fixed presets. It is used mid-run, so it must be readable at arm's length and in motion. Goal: two taps from open to running, no menus mid-run.
 
@@ -36,7 +36,7 @@ On the run screen the background takes a 12 percent tint of the phase color (red
 ## Screens
 
 1. **Home:** light greeting on the left, bold weekday with a small date on the right, a taupe settings button. Flat preset list with dashed dividers: HIDIT on top with a small ladder glyph of shrinking bars, then Norwegian 4x4, 30/30, Tabata, Custom. HIDIT and Custom open an editor. Below the list, a black card repeats the selected session's total time as a big numeral with a diagonal arrow. Start button (charcoal pill) at the bottom.
-2. **HIDIT builder:** taupe back button. Steppers for start work, number of steps and step-down (seconds or percent). Recovery is read-only and auto-calculated as work x 2/3. A preview card shows paired work and recover bars per step, separated by dashed guides, with step numbers and the total time as a big numeral. If work would fall under 0:10 the ladder stops early and says so.
+2. **HIDIT builder:** taupe back button. A Steps stepper adds or removes the last step (2 to 10). Each step has its own work stepper (5 second increments, 0:10 to 10:00) and shows its recovery, which is read-only and always work x 2/3. A preview card shows paired work and recover bars per step, separated by dashed guides, with step numbers and the total time as a big numeral.
 3. **Get ready:** 10-second countdown as a very large numeral at the bottom left with a diagonal arrow, "First: run hard 3:00", Skip and Cancel.
 4. **Run, work:** red phase. Up-right arrow, percent of the phase, a thin progress line with an end dot filling forward, "Run hard", giant timer, "Step 2 of 5", "Next: recover 1:40", full-width Pause.
 5. **Run, recover:** same layout in graphite. Down-right arrow, the line draining backward, "Next: run hard 2:00". Pause becomes Resume where paused.
@@ -47,7 +47,17 @@ On the run screen the background takes a 12 percent tint of the phase color (red
 
 ## HIDIT logic
 
-Recovery is always work x 2/3, so the 3:2 ratio cannot be broken. Example five-step ladder: 3:00/2:00, 2:15/1:30, 1:30/1:00, 0:45/0:30, 0:30/0:20 (about 13 minutes of intervals plus warm-up and cooldown). Fixed presets remain available. The full schedule is precomputed at start.
+HIDIT is a fixed ladder of work intervals that gets shorter each step. Recovery is always work x 2/3, so the 3:2 ratio cannot be broken. The default five-step ladder, which is also the HIDIT format to follow:
+
+| Step | Run (high intensity) | Recover (jog or walk) |
+| --- | --- | --- |
+| 1 | 3:00 | 2:00 |
+| 2 | 2:00 | 1:20 |
+| 3 | 1:00 | 0:40 |
+| 4 | 0:45 | 0:30 |
+| 5 (the loop) | 0:30 | 0:20 |
+
+The intervals total 12:05 (7:15 of work, 4:50 of recovery), plus warm-up and cooldown outside the app. The work times do not follow one repeated step-down, so the builder edits each step's work directly. Fixed presets remain available. The full schedule is precomputed at start.
 
 ## Cue system: run versus recover
 
